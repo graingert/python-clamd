@@ -52,7 +52,7 @@ Test strings :
 ^^^^^^^^^^^^
 
 >>> import pyclamd
->>> cd = clamd.clamd_unix_socket()
+>>> cd = pyclamd.clamd_unix_socket()
 >>> cd.ping()
 True
 >>> cd.version().split()[0]
