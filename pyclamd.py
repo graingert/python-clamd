@@ -544,7 +544,7 @@ class clamd_network_socket(clamd_generic):
         timeout (int or None) : socket timeout
         """
         assert type(host) in types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
-        assert type(port) in types.IntType, 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
+        assert type(port) in (types.IntType, ), 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
         assert type(timeout) in (types.IntType, types.NoneType), 'Wrong type for [timeout], should be either None or an int [was {0}]'.format(type(timeout))
         clamd_generic.__init__(self)
         

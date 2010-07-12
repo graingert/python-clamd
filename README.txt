@@ -5,7 +5,7 @@ the clamd daemon.
 This is a slightly improved version of pyClamd v0.1.1 created by Alexandre 
 Norman and published on his website: http://xael.org/norman/python/pyclamd/
 
-website for v0.2.0: http://www.decalage.info/en/python/pyclamd
+website for v0.2.0: http://www.decalage.info/en/python/pyclamd  
 
 Improvements from version 0.1.1 to 0.2.0:
 
