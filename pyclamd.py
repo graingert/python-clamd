@@ -26,6 +26,7 @@
 # 2010-07-12 v0.3.0 AN: - change API to class model
 #                       - using INSTREAM scan method instead of the deprecated STREAM
 #                       - added MULTISCAN method
+#                   TK: - changes to API to make it more consistent
 #------------------------------------------------------------------------------
 # TODO:
 # - improve tests for Win32 platform (avoid to write EICAR file to disk, or
@@ -63,9 +64,22 @@ True
 'POOLS: 1'
 >>> open('/tmp/EICAR','w').write(cd.EICAR())
 >>> cd.scan_file('/tmp/EICAR')
-{'/tmp/EICAR': 'Eicar-Test-Signature'}
+{'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
 >>> cd.scan_stream(cd.EICAR())
-{'stream': 'Eicar-Test-Signature'}
+{'stream': ('FOUND', 'Eicar-Test-Signature')}
+>>> cdn = pyclamd.clamd_network_socket()
+>>> cdn.ping()
+True
+>>> cdn.version().split()[0]
+'ClamAV'
+>>> cdn.reload()
+'RELOADING'
+>>> cdn.stats()
+'POOLS: 1'
+>>> cdn.scan_file('/tmp/EICAR')
+{'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
+>>> cdn.scan_stream(cd.EICAR())
+{'stream': ('FOUND', 'Eicar-Test-Signature')}
 """
 
 
@@ -82,6 +96,9 @@ class BufferTooLongError(ValueError):
 class ScanError(IOError):
 	pass
 
+class ConnectionError(socket.error):
+	pass
+
 
 ############################################################################
 
@@ -90,18 +107,7 @@ class clamd_generic(object):
     """
     Abstract class for clamd
     """
-    def __init__(self):
-        """
-        class initialisation, this class should not be used
-        """
-        self.unix_socket = None
-        self.host = None
-        self.port = None
-        self.timeout = None
-        self.clamd_socket = None
-        return
-
-
+    
     def EICAR(self):
         """
         returns Eicar test string
@@ -120,7 +126,7 @@ class clamd_generic(object):
         return: True if the server replies to PING
 
         May raise:
-          - ScanError: if the server do not reply by PONG
+          - ConnectionError: if the server do not reply by PONG
         """
 
         self.__init_socket__()
@@ -134,7 +140,7 @@ class clamd_generic(object):
         if result == 'PONG':
             return True
         else:
-            raise ScanError('Could not ping clamd server')
+            raise ConnectionError('Could not ping clamd server')
         return
 
 
@@ -146,7 +152,7 @@ class clamd_generic(object):
         return: (string) clamscan version
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
         """
         self.__init_socket__()
         try:
@@ -154,7 +160,7 @@ class clamd_generic(object):
             result = self.__recv_response()
             self.__close_socket()
         except socket.error:
-            raise ScanError('Could not get version information from server')
+            raise ConnectionError('Could not get version information from server')
 
         return result
 
@@ -166,7 +172,7 @@ class clamd_generic(object):
         return: (string) clamscan stats
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
         """
         self.__init_socket__()
         try:
@@ -174,7 +180,7 @@ class clamd_generic(object):
             result = self.__recv_response()
             self.__close_socket()
         except socket.error:
-            raise ScanError('Could not get version information from server')
+            raise ConnectionError('Could not get version information from server')
 
         return result
 
@@ -186,7 +192,7 @@ class clamd_generic(object):
         return: (string) "RELOADING"
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
         """
 
 
@@ -197,7 +203,7 @@ class clamd_generic(object):
             self.__close_socket()
             
         except socket.error:
-            raise ScanError('Could probably not reload signature database')
+            raise ConnectionError('Could probably not reload signature database')
 
         return result
 
@@ -210,7 +216,7 @@ class clamd_generic(object):
         return: nothing
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
         """
         try:
             self.__init_socket__()
@@ -218,7 +224,7 @@ class clamd_generic(object):
             result = self.__recv_response()
             self.__close_socket()
         except socket.error:
-            raise ScanError('Could probably not shutdown clamd')
+            raise ConnectionError('Could probably not shutdown clamd')
 
 
     
@@ -234,7 +240,8 @@ class clamd_generic(object):
           - None: if no virus found
 
         May raise :
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
+          - ScanError: in case of clamd reporting problems scanning
           - socket.timeout: if timeout has expired
         """
 
@@ -244,7 +251,7 @@ class clamd_generic(object):
             self.__init_socket__()
             self.__send_command('SCAN %s' % file)
         except socket.error:
-            raise ScanError('Unable to scan %s' % file)
+            raise ConnectionError('Unable to scan %s' % file)
 
         result='...'
         dr={}
@@ -252,15 +259,16 @@ class clamd_generic(object):
             try:
                 result = self.__recv_response()
             except socket.error:
-                raise ScanError('Unable to scan %s' % file)
+                raise ConnectionError('Unable to scan %s' % file)
 
             if len(result) > 0:
                 filename, reason, status = self.__parse_response(result)
 
                 if status == 'ERROR':
                     raise ScanError(reason)
+                    
                 elif status == 'FOUND':
-                    dr[filename] = reason
+                    dr[filename] = ('FOUND', '{0}'.format(reason))
 
         self.__close_socket()
         if not dr:
@@ -284,7 +292,8 @@ class clamd_generic(object):
           - None: if no virus found
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
+          - ScanError: in case of clamd reporting problems scanning
         """
         assert type(file) in types.StringTypes, 'Wrong type for [file], should be a string [was {0}]'.format(type(file))
 
@@ -292,7 +301,7 @@ class clamd_generic(object):
             self.__init_socket__()
             self.__send_command('MULTISCAN %s' % file)
         except socket.error:
-            raise ScanError('Unable to scan %s' % file)
+            raise ConnectionError('Unable to scan %s' % file)
 
         result='...'
         dr={}
@@ -300,13 +309,13 @@ class clamd_generic(object):
             try:
                 result = self.__recv_response()
             except socket.error:
-                raise ScanError('Unable to scan %s' % file)
+                raise ConnectionError('Unable to scan %s' % file)
 
             if len(result) > 0:
                 filename, reason, status = self.__parse_response(result)
 
                 if status == 'ERROR':
-                    dr[filename] = ('ERROR', '{0}'.format(reason))
+                    raise ScanError(reason)
                     
                 elif status == 'FOUND':
                     dr[filename] = ('FOUND', '{0}'.format(reason))
@@ -335,7 +344,7 @@ class clamd_generic(object):
           - None: if no virus found
 
         May raise:
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
         """
         assert type(file) in types.StringTypes, 'Wrong type for [file], should be a string [was {0}]'.format(type(file))
 
@@ -343,7 +352,7 @@ class clamd_generic(object):
             self.__init_socket__()
             self.__send_command('CONTSCAN %s' % file)
         except socket.error:
-            raise ScanError('Unable to scan %s' % file)
+            raise ConnectionError('Unable to scan %s' % file)
 
         result='...'
         dr={}
@@ -351,7 +360,7 @@ class clamd_generic(object):
             try:
                 result = self.__recv_response()
             except socket.error:
-                raise ScanError('Unable to scan %s' % file)
+                raise ConnectionError('Unable to scan %s' % file)
 
             if len(result) > 0:
                 filename, reason, status = self.__parse_response(result)
@@ -381,7 +390,8 @@ class clamd_generic(object):
 
         May raise :
           - BufferTooLongError: if the buffer size exceeds clamd limits
-          - ScanError: in case of communication problem
+          - ConnectionError: in case of communication problem
+          - ScanError: in case of clamd reporting problems scanning
         """
         assert type(buffer) in types.StringTypes, 'Wrong type for [buffer], should be a string [was {0}]'.format(type(buffer))
 
@@ -403,7 +413,7 @@ class clamd_generic(object):
                 
             
         except socket.error:
-            raise ScanError('Unable to scan stream')
+            raise ConnectionError('Unable to scan stream')
 
 
         result='...'
@@ -412,19 +422,20 @@ class clamd_generic(object):
             try:
                 result = self.__recv_response()
             except socket.error:
-                raise ScanError('Unable to scan stream')
+                raise ConnectionError('Unable to scan stream')
 
             if len(result) > 0:
                 
                 if result == 'INSTREAM size limit exceeded. ERROR':
-                    raise BufferTooLongError,'INSTREAM size limit exceeded. ERROR'
+                    raise BufferTooLongError(result)
 
                 filename, reason, status = self.__parse_response(result)
-
+               
                 if status == 'ERROR':
                     raise ScanError(reason)
+                    
                 elif status == 'FOUND':
-                    dr[filename] = reason
+                    dr[filename] = ('FOUND', '{0}'.format(reason))
 
         self.__close_socket()
         if not dr:
@@ -509,6 +520,7 @@ class clamd_unix_socket(clamd_generic):
         clamd_generic.__init__(self)
         
         self.unix_socket = filename
+        self.timeout = timeout
 
         return
 
@@ -523,7 +535,7 @@ class clamd_unix_socket(clamd_generic):
             if self.timeout is not None:
                 self.clamd_socket.settimeout(clamd_timeout)
         except socket.error:
-            raise ScanError('Could not reach clamd using unix socket (%s)' % 
+            raise ConnectionError('Could not reach clamd using unix socket (%s)' % 
                         (self.unix_socket))        
         return
     
@@ -546,6 +558,7 @@ class clamd_network_socket(clamd_generic):
         assert type(host) in types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
         assert type(port) in (types.IntType, ), 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
         assert type(timeout) in (types.IntType, types.NoneType), 'Wrong type for [timeout], should be either None or an int [was {0}]'.format(type(timeout))
+        
         clamd_generic.__init__(self)
         
         self.host = host
@@ -566,7 +579,7 @@ class clamd_network_socket(clamd_generic):
                 self.clamd_socket.settimeout(clamd_timeout)
 
         except socket.error:
-            raise ScanError('Could not reach clamd using network (%s, %s)' % 
+            raise ConnectionError('Could not reach clamd using network (%s, %s)' % 
                         (self.host, self.port))
 
         return
