@@ -13,6 +13,10 @@ pyclamd = Extension('pyclamd',
 
 setup (name = 'pyClamd',
        version = '0.3.0',
+
+       package_dir={'pyclamd': ''},
+       packages=['pyclamd'],
+
        author = 'Alexandre Norman',
        author_email = 'norman()xael.org',
        license ='LGPL',
