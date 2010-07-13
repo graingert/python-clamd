@@ -26,6 +26,7 @@
 # 2010-07-12 v0.3.0 AN: - change API to class model
 #                       - using INSTREAM scan method instead of the deprecated STREAM
 #                       - added MULTISCAN method
+#                       - STATS now return full data on multiline
 #                   TK: - changes to API to make it more consistent
 #------------------------------------------------------------------------------
 # TODO:
@@ -130,6 +131,7 @@ class clamd_generic(object):
         """
 
         self.__init_socket__()
+
         try:
             self.__send_command('PING')
             result = self.__recv_response()
@@ -177,7 +179,7 @@ class clamd_generic(object):
         self.__init_socket__()
         try:
             self.__send_command('STATS')
-            result = self.__recv_response()
+            result = self.__recv_response_multiline()
             self.__close_socket()
         except socket.error:
             raise ConnectionError('Could not get version information from server')
@@ -456,16 +458,32 @@ class clamd_generic(object):
         cmd = 'n%s\n' % cmd 
         self.clamd_socket.send(cmd)
         return
+
     
 
     def __recv_response(self):
         """
         receive response from clamd and strip all whitespace characters
         """
-
-        response = self.clamd_socket.recv(20000)
-        response = response.strip()
+        response =  self.clamd_socket.recv(4096).strip()
         return response
+
+
+
+    def __recv_response_multiline(self):
+        """
+        receive multiple line response from clamd and strip all whitespace characters
+        """
+        response = ''
+        c = '...'
+        while c != '':
+            try:
+                c = self.clamd_socket.recv(4096).strip()
+            except socket.error:
+                break
+            response += '{0}\n'.format(c)
+        return response
+
 
 
     def __close_socket(self):
@@ -513,9 +531,10 @@ class clamd_unix_socket(clamd_generic):
         class initialisation
 
         filename (string) : unix socket filename
+        timeout (float or None) : socket timeout
         """
         assert type(filename) in types.StringTypes, 'Wrong type for [filename], should be a string [was {0}]'.format(type(filename))
-        assert type(timeout) in (types.IntType, types.NoneType), 'Wrong type for [timeout], should be either None or an int [was {0}]'.format(type(timeout))
+        assert type(timeout) in (types.IntType, types.FloatType, types.NoneType), 'Wrong type for [timeout], should be either None or a float [was {0}]'.format(type(timeout))
 
         clamd_generic.__init__(self)
         
@@ -532,8 +551,7 @@ class clamd_unix_socket(clamd_generic):
         try:
             self.clamd_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             self.clamd_socket.connect(self.unix_socket)
-            if self.timeout is not None:
-                self.clamd_socket.settimeout(clamd_timeout)
+            self.clamd_socket.settimeout(self.timeout)
         except socket.error:
             raise ConnectionError('Could not reach clamd using unix socket (%s)' % 
                         (self.unix_socket))        
@@ -553,11 +571,11 @@ class clamd_network_socket(clamd_generic):
 
         host (string) : hostname or ip address
         port (int) : TCP port
-        timeout (int or None) : socket timeout
+        timeout (float or None) : socket timeout
         """
         assert type(host) in types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
         assert type(port) in (types.IntType, ), 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
-        assert type(timeout) in (types.IntType, types.NoneType), 'Wrong type for [timeout], should be either None or an int [was {0}]'.format(type(timeout))
+        assert type(timeout) in (types.IntType, types.FloatType, types.NoneType), 'Wrong type for [timeout], should be either None or a float [was {0}]'.format(type(timeout))
         
         clamd_generic.__init__(self)
         
@@ -575,8 +593,7 @@ class clamd_network_socket(clamd_generic):
         try:
             self.clamd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.clamd_socket.connect((self.host, self.port))
-            if self.timeout is not None:
-                self.clamd_socket.settimeout(clamd_timeout)
+            self.clamd_socket.settimeout(self.timeout)
 
         except socket.error:
             raise ConnectionError('Could not reach clamd using network (%s, %s)' % 
