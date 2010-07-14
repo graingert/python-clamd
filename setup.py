@@ -10,9 +10,10 @@ pyclamd = Extension('pyclamd',
 #  platform = 'Unix',
 #  download_url = 'http://xael.org/norman/python/pyclamd/',
 
+import pyclamd
 
 setup (name = 'pyClamd',
-       version = '0.3.0',
+       version = pyclamd.__version__,
 
        package_dir={'pyclamd': ''},
        packages=['pyclamd'],
