@@ -19,6 +19,5 @@ setup (name = 'clamd',
        license ='LGPL',
        keywords="python, clamav, antivirus, scanner, virus, libclamav".split(", "),
        url = 'https://github.com/graingert/python-clamd/',
-       include_dirs = ['/usr/local/include'],
        description = 'Clamd is a python interface to Clamd (Clamav daemon).',
        long_description = 'Clamd is a python interface to Clamd (Clamav daemon). By using Clamd, you can add virus detection capabilities to your python software in an efficient and easy way. Instead of PyClamav which uses libclamav, clamd may be used by a closed source product.')
