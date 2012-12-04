@@ -95,6 +95,7 @@ import socket
 import types
 import struct
 import string
+from StringIO import StringIO
 
 ############################################################################
 
@@ -389,7 +390,7 @@ class _ClamdGeneric(object):
         """
         Scan a buffer
 
-        buffer (string): buffer to scan
+        buffer (string or filelikeobj): buffer to scan
 
         return either:
           - (dict): {filename1: "virusname"}
@@ -399,7 +400,12 @@ class _ClamdGeneric(object):
           - BufferTooLongError: if the buffer size exceeds clamd limits
           - ConnectionError: in case of communication problem
         """
-        assert type(buffer) in types.StringTypes, 'Wrong type for [buffer], should be a string [was {0}]'.format(type(buffer))
+        assert (type(buffer) in types.StringTypes or hasattr(buffer, 'read')), 'Wrong type for [buffer], should be a string or have a read method [was {0}]'.format(type(buffer))
+
+        if hasattr(buffer, 'read'):
+            infile = buffer
+        else:
+            infile = StringIO(buffer)
 
         try:
             self._init_socket()
@@ -407,13 +413,11 @@ class _ClamdGeneric(object):
 
             max_chunk_size = 1024 # MUST be < StreamMaxLength in /etc/clamav/clamd.conf
 
-            chunks_left = buffer
-            while len(chunks_left)>0:
-                chunk = chunks_left[:max_chunk_size]
-                chunks_left = chunks_left[max_chunk_size:]
-
+            chunk = infile.read(max_chunk_size)
+            while chunk:
                 size = struct.pack('!L', len(chunk))
                 self.clamd_socket.send('{0}{1}'.format(size, chunk))
+                chunk = infile.read(max_chunk_size)
 
             self.clamd_socket.send(struct.pack('!L', 0))
                 
