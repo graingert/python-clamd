@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pyclamd
+import clamd
 
-cd = pyclamd.clamd_unix_socket()
+cd = clamd.ClamdUnixSocket()
 print(cd.ping())
 print(cd.version())
 print(cd.reload())
