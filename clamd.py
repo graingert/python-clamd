@@ -42,7 +42,7 @@
 
 
 """
-pyclamd.py
+clamd.py
 
 Author : Alexandre Norman - norman()xael.org
 Contributors :
@@ -55,39 +55,23 @@ Usage :
 Test strings :
 ^^^^^^^^^^^^
 
->>> import pyclamd
->>> cd = pyclamd.ClamdUnixSocket()
+>>> import clamd
+>>> cd = clamd.ClamdUnixSocket()
 >>> cd.ping()
 True
 >>> cd.version().split()[0]
 'ClamAV'
 >>> cd.reload()
 'RELOADING'
->>> cd.stats()
-'POOLS: 1'
 >>> open('/tmp/EICAR','w').write(cd.EICAR())
 >>> cd.scan_file('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
 >>> cd.scan_stream(cd.EICAR())
 {'stream': ('FOUND', 'Eicar-Test-Signature')}
->>> cdn = pyclamd.ClamdNetworkSocket()
->>> cdn.ping()
-True
->>> cdn.version().split()[0]
-'ClamAV'
->>> cdn.reload()
-'RELOADING'
->>> cdn.stats()
-'POOLS: 1'
->>> cdn.scan_file('/tmp/EICAR')
-{'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
->>> cdn.scan_stream(cd.EICAR())
-{'stream': ('FOUND', 'Eicar-Test-Signature')}
+
 """
 
-
-
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 # $Source$
 
 
