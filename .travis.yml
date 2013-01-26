@@ -6,7 +6,7 @@ python:
   - "3.3"
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install clamd clamav-freshclam clamav-unofficial-sigs -qq
+  - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs -qq
   - pip install . --use-mirrors
 script:  python setup.py nosetests
 matrix:
