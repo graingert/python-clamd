@@ -82,7 +82,7 @@ class _ClamdGeneric(object):
             result = self._recv_response()
             self._close_socket()
         except socket.error:
-            raise ConnexionError('Could not ping clamd server')
+            raise ConnectionError('Could not ping clamd server')
 
         if result == 'PONG':
             return True
