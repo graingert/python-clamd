@@ -435,12 +435,8 @@ class ClamdUnixSocket(_ClamdGeneric):
         timeout (float or None) : socket timeout
         """
 
-        super(ClamdUnixSocket).__init__(self)
-
         self.unix_socket = filename
         self.timeout = timeout
-
-        return
 
     def _init_socket(self):
         """
@@ -453,7 +449,6 @@ class ClamdUnixSocket(_ClamdGeneric):
         except socket.error:
             raise ConnectionError('Could not reach clamd using unix socket (%s)' %
                         (self.unix_socket))
-        return
 
 
 class ClamdNetworkSocket(_ClamdGeneric):
@@ -469,13 +464,9 @@ class ClamdNetworkSocket(_ClamdGeneric):
         timeout (float or None) : socket timeout
         """
 
-        super(ClamdNetworkSocket).__init__(self)
-
         self.host = host
         self.port = port
         self.timeout = timeout
-
-        return
 
     def _init_socket(self):
         """
