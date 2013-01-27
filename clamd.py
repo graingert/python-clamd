@@ -182,8 +182,6 @@ class _ClamdGeneric(object):
           - socket.timeout: if timeout has expired
         """
 
-        assert type(file) in types.StringTypes, 'Wrong type for [file], should be a string [was {0}]'.format(type(file))
-
         try:
             self._init_socket()
             self._send_command('SCAN %s' % file)
@@ -228,7 +226,6 @@ class _ClamdGeneric(object):
         May raise:
           - ConnectionError: in case of communication problem
         """
-        assert type(file) in types.StringTypes, 'Wrong type for [file], should be a string [was {0}]'.format(type(file))
 
         try:
             self._init_socket()
@@ -273,7 +270,6 @@ class _ClamdGeneric(object):
         May raise:
           - ConnectionError: in case of communication problem
         """
-        assert type(file) in types.StringTypes, 'Wrong type for [file], should be a string [was {0}]'.format(type(file))
 
         try:
             self._init_socket()
@@ -317,7 +313,6 @@ class _ClamdGeneric(object):
           - BufferTooLongError: if the buffer size exceeds clamd limits
           - ConnectionError: in case of communication problem
         """
-        assert (type(buffer) in types.StringTypes or hasattr(buffer, 'read')), 'Wrong type for [buffer], should be a string or have a read method [was {0}]'.format(type(buffer))
 
         if hasattr(buffer, 'read'):
             infile = buffer
@@ -439,10 +434,8 @@ class ClamdUnixSocket(_ClamdGeneric):
         filename (string) : unix socket filename
         timeout (float or None) : socket timeout
         """
-        assert type(filename) in types.StringTypes, 'Wrong type for [filename], should be a string [was {0}]'.format(type(filename))
-        assert type(timeout) in (types.IntType, types.FloatType, types.NoneType), 'Wrong type for [timeout], should be either None or a float [was {0}]'.format(type(timeout))
 
-        _ClamdGeneric.__init__(self)
+        super(ClamdUnixSocket).__init__(self)
 
         self.unix_socket = filename
         self.timeout = timeout
@@ -475,11 +468,8 @@ class ClamdNetworkSocket(_ClamdGeneric):
         port (int) : TCP port
         timeout (float or None) : socket timeout
         """
-        assert type(host) in types.StringTypes, 'Wrong type for [host], should be a string [was {0}]'.format(type(host))
-        assert type(port) in (types.IntType, ), 'Wrong type for [port], should be an int [was {0}]'.format(type(port))
-        assert type(timeout) in (types.IntType, types.FloatType, types.NoneType), 'Wrong type for [timeout], should be either None or a float [was {0}]'.format(type(timeout))
 
-        _ClamdGeneric.__init__(self)
+        super(ClamdNetworkSocket).__init__(self)
 
         self.host = host
         self.port = port
