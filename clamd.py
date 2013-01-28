@@ -32,7 +32,7 @@ True
 """
 
 try:
-    __version__ = __import__('pkg_resources').get_distribution('d2to1').version
+    __version__ = __import__('pkg_resources').get_distribution('clamd').version
 except:
     __version__ = ''
 
