@@ -1,19 +1,16 @@
-from redis.client import Redis, StrictRedis
-from redis.connection import (
+from clamav.client import ClamAV
+from clamav.connection import (
     ConnectionPool,
     Connection,
     UnixDomainSocketConnection
 )
-from redis.utils import from_url
-from redis.exceptions import (
-    AuthenticationError,
+from clamav.utils import from_url
+from clamav.exceptions import (
     ConnectionError,
     DataError,
     InvalidResponse,
-    PubSubError,
-    RedisError,
+    ClamAVError,
     ResponseError,
-    WatchError,
 )
 
 
@@ -21,8 +18,8 @@ __version__ = '2.7.2'
 VERSION = tuple(map(int, __version__.split('.')))
 
 __all__ = [
-    'Redis', 'StrictRedis', 'ConnectionPool',
+    'ClamAV', 'ConnectionPool',
     'Connection', 'UnixDomainSocketConnection',
-    'RedisError', 'ConnectionError', 'ResponseError', 'AuthenticationError',
-    'InvalidResponse', 'DataError', 'PubSubError', 'WatchError', 'from_url',
+    'ClamAVError', 'ConnectionError', 'ResponseError',
+    'InvalidResponse', 'DataError', 'from_url',
 ]

@@ -3,16 +3,15 @@ import os
 import socket
 import sys
 
-from redis._compat import (b, xrange, imap, byte_to_chr, unicode, bytes, long,
+from clamav._compat import (b, xrange, imap, byte_to_chr, unicode, bytes, long,
                            BytesIO, nativestr, basestring)
-from redis.exceptions import (
-    RedisError,
+
+from clamav.exceptions import (
     ConnectionError,
-    ResponseError,
+    DataError,
     InvalidResponse,
-    AuthenticationError,
-    NoScriptError,
-    ExecAbortError,
+    ClamAVError,
+    ResponseError,
 )
 
 try:
@@ -35,8 +34,6 @@ class PythonParser(object):
 
     EXCEPTION_CLASSES = {
         'ERR': ResponseError,
-        'NOSCRIPT': NoScriptError,
-        'EXECABORT': ExecAbortError,
     }
 
     def __init__(self):
