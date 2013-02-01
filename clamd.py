@@ -42,6 +42,7 @@ except:
 
 import socket
 import struct
+import contextlib
 import re
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
@@ -165,51 +166,15 @@ class _ClamdGeneric(object):
             raise ConnectionError('Could probably not shutdown clamd')
 
     def scan_file(self, file):
-        """
-        Scan a file or directory given by filename and stop on first virus or error found.
-        Scan with archive support enabled.
-
-        file (string) : filename or directory (MUST BE ABSOLUTE PATH !)
-
-        return either :
-          - (dict): {filename1: "virusname"}
-          - None: if no virus found
-
-        May raise :
-          - ConnectionError: in case of communication problem
-          - socket.timeout: if timeout has expired
-        """
-
-        try:
-            self._init_socket()
-            self._send_command('SCAN %s' % file)
-        except socket.error:
-            raise ConnectionError('Unable to scan %s' % file)
-
-        result = '...'
-        dr = {}
-        while result:
-            try:
-                result = self._recv_response()
-            except socket.error:
-                raise ConnectionError('Unable to scan %s' % file)
-
-            if len(result) > 0:
-                filename, reason, status = self._parse_response(result)
-
-                if status == 'ERROR':
-                    dr[filename] = ('ERROR', '{0}'.format(reason))
-                    return dr
-
-                elif status == 'FOUND':
-                    dr[filename] = ('FOUND', '{0}'.format(reason))
-
-        self._close_socket()
-        if not dr:
-            return None
-        return dr
+        return self._file_system_scan('SCAN', file)
 
     def multiscan_file(self, file):
+        return self._file_system_scan('MULTISCAN', file)
+
+    def contscan_file(self, file):
+        return self._file_system_scan('CONTSCAN', file)
+
+    def _file_system_scan(self, command, file):
         """
         Scan a file or directory given by filename using multiple threads (faster on SMP machines).
         Do not stop on error or virus found.
@@ -227,70 +192,20 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command('MULTISCAN %s' % file)
+            self._send_command('%s %s' % (command, file))
+
+            dr = {}
+            for result in self._recv_response_multiline().split('\n'):
+                if result:
+                    filename, reason, status = self._parse_response(result)
+
+                    if status == 'ERROR':
+                        dr[filename] = ('ERROR', '{0}'.format(reason))
+
+                    elif status == 'FOUND':
+                        dr[filename] = ('FOUND', '{0}'.format(reason))
         except socket.error:
             raise ConnectionError('Unable to scan %s' % file)
-
-        result = '...'
-        dr = {}
-        while result:
-            try:
-                result = self._recv_response()
-            except socket.error:
-                raise ConnectionError('Unable to scan %s' % file)
-
-            if len(result) > 0:
-                filename, reason, status = self._parse_response(result)
-
-                if status == 'ERROR':
-                    dr[filename] = ('ERROR', '{0}'.format(reason))
-
-                elif status == 'FOUND':
-                    dr[filename] = ('FOUND', '{0}'.format(reason))
-
-        self._close_socket()
-        if not dr:
-            return None
-        return dr
-
-    def contscan_file(self, file):
-        """
-        Scan a file or directory given by filename
-        Do not stop on error or virus found.
-        Scan with archive support enabled.
-
-        file (string): filename or directory (MUST BE ABSOLUTE PATH !)
-
-        return either :
-          - (dict): {filename1: ('FOUND', 'virusname'), filename2: ('ERROR', 'reason')}
-          - None: if no virus found
-
-        May raise:
-          - ConnectionError: in case of communication problem
-        """
-
-        try:
-            self._init_socket()
-            self._send_command('CONTSCAN %s' % file)
-        except socket.error:
-            raise ConnectionError('Unable to scan %s' % file)
-
-        result = '...'
-        dr = {}
-        while result:
-            try:
-                result = self._recv_response()
-            except socket.error:
-                raise ConnectionError('Unable to scan %s' % file)
-
-            if len(result) > 0:
-                filename, reason, status = self._parse_response(result)
-
-                if status == 'ERROR':
-                    dr[filename] = ('ERROR', '{0}'.format(reason))
-
-                elif status == 'FOUND':
-                    dr[filename] = ('FOUND', '{0}'.format(reason))
 
         self._close_socket()
         if not dr:
@@ -367,24 +282,17 @@ class _ClamdGeneric(object):
 
     def _recv_response(self):
         """
-        receive response from clamd and strip all whitespace characters
+        receive line from clamd
         """
-        response = self.clamd_socket.recv(4096).strip()
-        return response
+        with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
+            return f.readline().strip()
 
     def _recv_response_multiline(self):
         """
         receive multiple line response from clamd and strip all whitespace characters
         """
-        response = ''
-        c = '...'
-        while c != '':
-            try:
-                c = self.clamd_socket.recv(4096).strip()
-            except socket.error:
-                break
-            response += '{0}\n'.format(c)
-        return response
+        with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
+            return f.read()
 
     def _close_socket(self):
         """
