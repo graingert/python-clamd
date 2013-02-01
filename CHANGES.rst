@@ -1,7 +1,7 @@
 Changes
 =========
 
-0.3.4 (unreleased)
+0.3.4 (2013-02-01)
 ------------------
 
 - Use regex to parse file status reponse instead of complicated string split/join
