@@ -25,9 +25,9 @@ True
 >>> cd.reload()
 'RELOADING'
 >>> open('/tmp/EICAR','w').write(clamd.EICAR)
->>> cd.scan_file('/tmp/EICAR')
+>>> cd.scan('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
->>> cd.scan_stream(BytesIO(clamd.EICAR))
+>>> cd.instream(BytesIO(clamd.EICAR))
 {'stream': ('FOUND', 'Eicar-Test-Signature')}
 
 """
@@ -108,25 +108,6 @@ class _ClamdGeneric(object):
 
         return result
 
-    def stats(self):
-        """
-        Get Clamscan stats
-
-        return: (string) clamscan stats
-
-        May raise:
-          - ConnectionError: in case of communication problem
-        """
-        self._init_socket()
-        try:
-            self._send_command('STATS')
-            result = self._recv_response_multiline()
-            self._close_socket()
-        except socket.error:
-            raise ConnectionError('Could not get version information from server')
-
-        return result
-
     def reload(self):
         """
         Force Clamd to reload signature database
@@ -165,14 +146,14 @@ class _ClamdGeneric(object):
         except socket.error:
             raise ConnectionError('Could probably not shutdown clamd')
 
-    def scan_file(self, file):
+    def scan(self, file):
         return self._file_system_scan('SCAN', file)
 
-    def multiscan_file(self, file):
-        return self._file_system_scan('MULTISCAN', file)
-
-    def contscan_file(self, file):
+    def contscan(self, file):
         return self._file_system_scan('CONTSCAN', file)
+
+    def multiscan(self, file):
+        return self._file_system_scan('MULTISCAN', file)
 
     def _file_system_scan(self, command, file):
         """
@@ -212,7 +193,7 @@ class _ClamdGeneric(object):
             return None
         return dr
 
-    def scan_stream(self, buff):
+    def instream(self, buff):
         """
         Scan a buffer
 
@@ -269,6 +250,25 @@ class _ClamdGeneric(object):
         if not dr:
             return None
         return dr
+
+    def stats(self):
+        """
+        Get Clamscan stats
+
+        return: (string) clamscan stats
+
+        May raise:
+          - ConnectionError: in case of communication problem
+        """
+        self._init_socket()
+        try:
+            self._send_command('STATS')
+            result = self._recv_response_multiline()
+            self._close_socket()
+        except socket.error:
+            raise ConnectionError('Could not get version information from server')
+
+        return result
 
     def _send_command(self, cmd):
         """
