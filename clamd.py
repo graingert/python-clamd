@@ -40,10 +40,11 @@ except:
 
 
 import socket
-import types
 import struct
-import string
 from StringIO import StringIO
+import re
+
+scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
 
 
 class BufferTooLongError(ValueError):
@@ -408,23 +409,7 @@ class _ClamdGeneric(object):
         """
         parses responses for SCAN, CONTSCAN, MULTISCAN and STREAM commands.
         """
-
-        msg = msg.strip()
-        filename = msg.split(': ')[0]
-        left = msg.split(': ')[1:]
-        if type(left) in types.StringTypes:
-            result = left
-        else:
-            result = string.join(left, ': ')
-
-        if result != 'OK':
-            parts = result.split()
-            reason = ' '.join(parts[:-1])
-            status = parts[-1]
-        else:
-            reason, status = '', 'OK'
-
-        return filename, reason, status
+        return scan_response.match(msg).group("path", "virus", "status")
 
 
 class ClamdUnixSocket(_ClamdGeneric):
