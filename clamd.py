@@ -46,8 +46,6 @@ import contextlib
 import re
 import base64
 
-import six
-
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
 EICAR = base64.b64decode(b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
                 b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n')
@@ -132,20 +130,23 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command(b'%s %s' % (command, file))
+            self._send_command(b'{command} {arg}'.format(
+                command=command,
+                arg=file
+            ))
 
             dr = {}
             for result in self._recv_response_multiline().split('\n'):
                 if result:
                     filename, reason, status = self._parse_response(result)
-                    dr[filename] = (six.text_type(status), '{0}'.format(reason))
+                    dr[filename] = (status, reason)
 
             if not dr:
                 return None
             return dr
 
         except socket.error:
-            raise ConnectionError('Unable to scan %s' % file)
+            raise ConnectionError('Unable to scan {file}'.format(file=file))
         finally:
             self._close_socket()
 
@@ -184,7 +185,7 @@ class _ClamdGeneric(object):
                     raise BufferTooLongError(result)
 
                 filename, reason, status = self._parse_response(result)
-                return {filename: (six.text_type(status), '{0}'.format(reason))}
+                return {filename: (status, reason)}
 
         except socket.error:
             raise ConnectionError('Unable to scan stream')
@@ -215,7 +216,7 @@ class _ClamdGeneric(object):
         terminated strings, as python<->clamd has some problems with \0x00
         """
 
-        cmd = b'n%s\n' % cmd
+        cmd = b'n{0}\n'.format(cmd)
         self.clamd_socket.send(cmd)
         return
 
@@ -271,8 +272,7 @@ class ClamdUnixSocket(_ClamdGeneric):
             self.clamd_socket.connect(self.unix_socket)
             self.clamd_socket.settimeout(self.timeout)
         except socket.error:
-            raise ConnectionError('Could not reach clamd using unix socket (%s)' %
-                        (self.unix_socket))
+            raise ConnectionError('Could not reach clamd using unix socket {0}'.format(self.unix_socket))
 
 
 class ClamdNetworkSocket(_ClamdGeneric):
@@ -302,7 +302,8 @@ class ClamdNetworkSocket(_ClamdGeneric):
             self.clamd_socket.settimeout(self.timeout)
 
         except socket.error:
-            raise ConnectionError('Could not reach clamd using network (%s, %s)' %
-                        (self.host, self.port))
-
-        return
+            raise ConnectionError('Could not reach clamd using network ({host}, {port})'.format(
+                    host=self.host,
+                    port=self.port
+                )
+            )
