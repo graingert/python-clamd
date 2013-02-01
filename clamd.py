@@ -24,10 +24,10 @@ True
 'ClamAV'
 >>> cd.reload()
 'RELOADING'
->>> open('/tmp/EICAR','w').write(cd.EICAR())
+>>> open('/tmp/EICAR','w').write(clamd.EICAR)
 >>> cd.scan_file('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
->>> cd.scan_stream(BytesIO(cd.EICAR()))
+>>> cd.scan_stream(BytesIO(clamd.EICAR))
 {'stream': ('FOUND', 'Eicar-Test-Signature')}
 
 """
@@ -45,6 +45,8 @@ import struct
 import re
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
+EICAR = 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
+                'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n'.decode('base64')
 
 
 class BufferTooLongError(ValueError):
@@ -59,15 +61,6 @@ class _ClamdGeneric(object):
     """
     Abstract class for clamd
     """
-
-    def EICAR(self):
-        """
-        returns Eicar test string
-        """
-        # Eicar test string (encoded for skipping virus scanners)
-        EICAR = 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
-                'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n'.decode('base64')
-        return EICAR
 
     def ping(self):
         """
