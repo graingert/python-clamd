@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
+from __future__ import unicode_literals
 """
 clamd.py
 
@@ -44,10 +44,13 @@ import socket
 import struct
 import contextlib
 import re
+import base64
+
+import six
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
-EICAR = 'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
-                'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n'.decode('base64')
+EICAR = base64.b64decode(b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
+                b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n')
 
 
 class BufferTooLongError(ValueError):
@@ -77,7 +80,7 @@ class _ClamdGeneric(object):
         self._init_socket()
 
         try:
-            self._send_command('PING')
+            self._send_command(b'PING')
             result = self._recv_response()
             self._close_socket()
         except socket.error:
@@ -100,7 +103,7 @@ class _ClamdGeneric(object):
         """
         self._init_socket()
         try:
-            self._send_command('VERSION')
+            self._send_command(b'VERSION')
             result = self._recv_response()
             self._close_socket()
         except socket.error:
@@ -120,7 +123,7 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command('RELOAD')
+            self._send_command(b'RELOAD')
             result = self._recv_response()
             self._close_socket()
 
@@ -140,20 +143,20 @@ class _ClamdGeneric(object):
         """
         try:
             self._init_socket()
-            self._send_command('SHUTDOWN')
+            self._send_command(b'SHUTDOWN')
             # result = self._recv_response()
             self._close_socket()
         except socket.error:
             raise ConnectionError('Could probably not shutdown clamd')
 
     def scan(self, file):
-        return self._file_system_scan('SCAN', file)
+        return self._file_system_scan(b'SCAN', file)
 
     def contscan(self, file):
-        return self._file_system_scan('CONTSCAN', file)
+        return self._file_system_scan(b'CONTSCAN', file)
 
     def multiscan(self, file):
-        return self._file_system_scan('MULTISCAN', file)
+        return self._file_system_scan(b'MULTISCAN', file)
 
     def _file_system_scan(self, command, file):
         """
@@ -173,18 +176,14 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command('%s %s' % (command, file))
+            self._send_command(b'%s %s' % (command, file))
 
             dr = {}
             for result in self._recv_response_multiline().split('\n'):
                 if result:
                     filename, reason, status = self._parse_response(result)
+                    dr[filename] = (six.text_type(status), '{0}'.format(reason))
 
-                    if status == 'ERROR':
-                        dr[filename] = ('ERROR', '{0}'.format(reason))
-
-                    elif status == 'FOUND':
-                        dr[filename] = ('FOUND', '{0}'.format(reason))
         except socket.error:
             raise ConnectionError('Unable to scan %s' % file)
 
@@ -216,7 +215,7 @@ class _ClamdGeneric(object):
 
             chunk = buff.read(max_chunk_size)
             while chunk:
-                size = struct.pack('!L', len(chunk))
+                size = struct.pack(b'!L', len(chunk))
                 self.clamd_socket.send('{0}{1}'.format(size, chunk))
                 chunk = buff.read(max_chunk_size)
 
@@ -239,12 +238,7 @@ class _ClamdGeneric(object):
                     raise BufferTooLongError(result)
 
                 filename, reason, status = self._parse_response(result)
-
-                if status == 'ERROR':
-                    dr[filename] = ('ERROR', '{0}'.format(reason))
-
-                elif status == 'FOUND':
-                    dr[filename] = ('FOUND', '{0}'.format(reason))
+                dr[filename] = (six.text_type(status), '{0}'.format(reason))
 
         self._close_socket()
         if not dr:
@@ -262,7 +256,7 @@ class _ClamdGeneric(object):
         """
         self._init_socket()
         try:
-            self._send_command('STATS')
+            self._send_command(b'STATS')
             result = self._recv_response_multiline()
             self._close_socket()
         except socket.error:
@@ -276,7 +270,7 @@ class _ClamdGeneric(object):
         terminated strings, as python<->clamd has some problems with \0x00
         """
 
-        cmd = 'n%s\n' % cmd
+        cmd = b'n%s\n' % cmd
         self.clamd_socket.send(cmd)
         return
 
