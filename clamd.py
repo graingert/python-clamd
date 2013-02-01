@@ -67,70 +67,13 @@ class _ClamdGeneric(object):
     """
 
     def ping(self):
-        """
-        Send a PING to the clamav server, which should reply
-        by a PONG.
-
-        return: True if the server replies to PING
-
-        May raise:
-          - ConnectionError: if the server do not reply by PONG
-        """
-
-        self._init_socket()
-
-        try:
-            self._send_command(b'PING')
-            result = self._recv_response()
-            self._close_socket()
-        except socket.error:
-            raise ConnectionError('Could not ping clamd server')
-
-        if result == 'PONG':
-            return True
-        else:
-            raise ConnectionError('Could not ping clamd server')
-        return
+        return self._basic_command(b"PING")
 
     def version(self):
-        """
-        Get Clamscan version
-
-        return: (string) clamscan version
-
-        May raise:
-          - ConnectionError: in case of communication problem
-        """
-        self._init_socket()
-        try:
-            self._send_command(b'VERSION')
-            result = self._recv_response()
-            self._close_socket()
-        except socket.error:
-            raise ConnectionError('Could not get version information from server')
-
-        return result
+        return self._basic_command(b"VERSION")
 
     def reload(self):
-        """
-        Force Clamd to reload signature database
-
-        return: (string) "RELOADING"
-
-        May raise:
-          - ConnectionError: in case of communication problem
-        """
-
-        try:
-            self._init_socket()
-            self._send_command(b'RELOAD')
-            result = self._recv_response()
-            self._close_socket()
-
-        except socket.error:
-            raise ConnectionError('Could probably not reload signature database')
-
-        return result
+        return self._basic_command(b"RELOAD")
 
     def shutdown(self):
         """
@@ -158,6 +101,19 @@ class _ClamdGeneric(object):
     def multiscan(self, file):
         return self._file_system_scan(b'MULTISCAN', file)
 
+    def _basic_command(self, command):
+        """
+        Send a command to the clamav server, and return the reply.
+        """
+        self._init_socket()
+        try:
+            self._send_command(command)
+            return self._recv_response()
+        except socket.error:
+            raise ConnectionError('Could not complete command {command}'.format(command=command))
+        finally:
+            self._close_socket()
+
     def _file_system_scan(self, command, file):
         """
         Scan a file or directory given by filename using multiple threads (faster on SMP machines).
@@ -184,13 +140,14 @@ class _ClamdGeneric(object):
                     filename, reason, status = self._parse_response(result)
                     dr[filename] = (six.text_type(status), '{0}'.format(reason))
 
+            if not dr:
+                return None
+            return dr
+
         except socket.error:
             raise ConnectionError('Unable to scan %s' % file)
-
-        self._close_socket()
-        if not dr:
-            return None
-        return dr
+        finally:
+            self._close_socket()
 
     def instream(self, buff):
         """
@@ -198,9 +155,8 @@ class _ClamdGeneric(object):
 
         buff  filelikeobj: buffer to scan
 
-        return either:
-          - (dict): {filename1: "virusname"}
-          - None: if no virus found
+        return:
+          - (dict): {filename1: ("virusname", "status")}
 
         May raise :
           - BufferTooLongError: if the buffer size exceeds clamd limits
@@ -209,7 +165,7 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command('INSTREAM')
+            self._send_command(b'INSTREAM')
 
             max_chunk_size = 1024  # MUST be < StreamMaxLength in /etc/clamav/clamd.conf
 
@@ -219,31 +175,21 @@ class _ClamdGeneric(object):
                 self.clamd_socket.send('{0}{1}'.format(size, chunk))
                 chunk = buff.read(max_chunk_size)
 
-            self.clamd_socket.send(struct.pack('!L', 0))
+            self.clamd_socket.send(struct.pack(b'!L', 0))
 
-        except socket.error:
-            raise ConnectionError('Unable to scan stream')
-
-        result = '...'
-        dr = {}
-        while result:
-            try:
-                result = self._recv_response()
-            except socket.error:
-                raise ConnectionError('Unable to scan stream')
+            result = self._recv_response()
 
             if len(result) > 0:
-
                 if result == 'INSTREAM size limit exceeded. ERROR':
                     raise BufferTooLongError(result)
 
                 filename, reason, status = self._parse_response(result)
-                dr[filename] = (six.text_type(status), '{0}'.format(reason))
+                return {filename: (six.text_type(status), '{0}'.format(reason))}
 
-        self._close_socket()
-        if not dr:
-            return None
-        return dr
+        except socket.error:
+            raise ConnectionError('Unable to scan stream')
+        finally:
+            self._close_socket()
 
     def stats(self):
         """
@@ -257,12 +203,11 @@ class _ClamdGeneric(object):
         self._init_socket()
         try:
             self._send_command(b'STATS')
-            result = self._recv_response_multiline()
-            self._close_socket()
+            return self._recv_response_multiline()
         except socket.error:
             raise ConnectionError('Could not get version information from server')
-
-        return result
+        finally:
+            self._close_socket()
 
     def _send_command(self, cmd):
         """
