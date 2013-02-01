@@ -67,7 +67,7 @@ class TestUnixSocket():
 
             eq_(self.cd.multiscan(d), expected)
 
-#    def test_instream(self):
+    def test_instream(self):
         eq_(
             self.cd.instream(BytesIO(clamd.EICAR)),
             {'stream': ('FOUND', 'Eicar-Test-Signature')}
