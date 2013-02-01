@@ -24,7 +24,7 @@ True
 'ClamAV'
 >>> cd.reload()
 'RELOADING'
->>> open('/tmp/EICAR','w+b').write(clamd.EICAR)
+>>> open('/tmp/EICAR','wb').write(clamd.EICAR)
 >>> cd.scan('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
 >>> cd.instream(BytesIO(clamd.EICAR))
