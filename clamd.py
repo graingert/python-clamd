@@ -16,6 +16,7 @@ Test strings :
 ^^^^^^^^^^^^
 
 >>> import clamd
+>>> from six import BytesIO
 >>> cd = clamd.ClamdUnixSocket()
 >>> cd.ping()
 True
@@ -26,7 +27,7 @@ True
 >>> open('/tmp/EICAR','w').write(cd.EICAR())
 >>> cd.scan_file('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
->>> cd.scan_stream(cd.EICAR())
+>>> cd.scan_stream(BytesIO(cd.EICAR()))
 {'stream': ('FOUND', 'Eicar-Test-Signature')}
 
 """
@@ -41,7 +42,6 @@ except:
 
 import socket
 import struct
-from StringIO import StringIO
 import re
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
@@ -304,11 +304,11 @@ class _ClamdGeneric(object):
             return None
         return dr
 
-    def scan_stream(self, buffer):
+    def scan_stream(self, buff):
         """
         Scan a buffer
 
-        buffer (string or filelikeobj): buffer to scan
+        buff  filelikeobj: buffer to scan
 
         return either:
           - (dict): {filename1: "virusname"}
@@ -319,22 +319,17 @@ class _ClamdGeneric(object):
           - ConnectionError: in case of communication problem
         """
 
-        if hasattr(buffer, 'read'):
-            infile = buffer
-        else:
-            infile = StringIO(buffer)
-
         try:
             self._init_socket()
             self._send_command('INSTREAM')
 
             max_chunk_size = 1024  # MUST be < StreamMaxLength in /etc/clamav/clamd.conf
 
-            chunk = infile.read(max_chunk_size)
+            chunk = buff.read(max_chunk_size)
             while chunk:
                 size = struct.pack('!L', len(chunk))
                 self.clamd_socket.send('{0}{1}'.format(size, chunk))
-                chunk = infile.read(max_chunk_size)
+                chunk = buff.read(max_chunk_size)
 
             self.clamd_socket.send(struct.pack('!L', 0))
 
