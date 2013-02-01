@@ -224,14 +224,14 @@ class _ClamdGeneric(object):
         """
         receive line from clamd
         """
-        with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
+        with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
             return f.readline().decode('utf-8').strip()
 
     def _recv_response_multiline(self):
         """
         receive multiple line response from clamd and strip all whitespace characters
         """
-        with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
+        with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
             return f.read().decode('utf-8')
 
     def _close_socket(self):
