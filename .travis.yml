@@ -14,4 +14,3 @@ script:  python setup.py nosetests
 matrix:
   allow_failures:
     - python: "2.5"
-    - python: "3.3"
