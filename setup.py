@@ -3,6 +3,7 @@ from setuptools import setup
 
 setup(
     setup_requires=['d2to1'],
+    tests_require=['six'],
     d2to1=True,
 
     # This ensures that the MANIFEST.in is read, but it
