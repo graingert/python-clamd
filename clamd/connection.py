@@ -14,20 +14,8 @@ from clamav.exceptions import (
     ResponseError,
 )
 
-try:
-    import hiredis
-    hiredis_available = True
-except ImportError:
-    hiredis_available = False
 
-
-SYM_STAR = b('*')
-SYM_DOLLAR = b('$')
-SYM_CRLF = b('\r\n')
-SYM_LF = b('\n')
-
-
-class PythonParser(object):
+class DefaultParser(object):
     "Plain Python parsing class"
     MAX_READ_LENGTH = 1000000
     encoding = None
@@ -102,95 +90,12 @@ class PythonParser(object):
         if not response:
             raise ConnectionError("Socket closed on remote end")
 
-        byte, response = byte_to_chr(response[0]), response[1:]
-
-        if byte not in ('-', '+', ':', '$', '*'):
-            raise InvalidResponse("Protocol Error")
-
         # server returned an error
-        if byte == '-':
+        if response.endswith("ERROR"):
             response = nativestr(response)
-            if response.startswith('LOADING '):
-                # if we're loading the dataset into memory, kill the socket
-                # so we re-initialize (and re-SELECT) next time.
-                raise ConnectionError("Redis is loading data into memory")
-            # *return*, not raise the exception class. if it is meant to be
-            # raised, it will be at a higher level.
             return self.parse_error(response)
-        # single value
-        elif byte == '+':
-            pass
-        # int value
-        elif byte == ':':
-            response = long(response)
-        # bulk response
-        elif byte == '$':
-            length = int(response)
-            if length == -1:
-                return None
-            response = self.read(length)
-        # multi-bulk response
-        elif byte == '*':
-            length = int(response)
-            if length == -1:
-                return None
-            response = [self.read_response() for i in xrange(length)]
-        if isinstance(response, bytes) and self.encoding:
-            response = response.decode(self.encoding)
+
         return response
-
-
-class HiredisParser(object):
-    "Parser class for connections using Hiredis"
-    def __init__(self):
-        if not hiredis_available:
-            raise RedisError("Hiredis is not installed")
-
-    def __del__(self):
-        try:
-            self.on_disconnect()
-        except:
-            pass
-
-    def on_connect(self, connection):
-        self._sock = connection._sock
-        kwargs = {
-            'protocolError': InvalidResponse,
-            'replyError': ResponseError,
-        }
-        if connection.decode_responses:
-            kwargs['encoding'] = connection.encoding
-        self._reader = hiredis.Reader(**kwargs)
-
-    def on_disconnect(self):
-        self._sock = None
-        self._reader = None
-
-    def read_response(self):
-        if not self._reader:
-            raise ConnectionError("Socket closed on remote end")
-        response = self._reader.gets()
-        while response is False:
-            try:
-                buffer = self._sock.recv(4096)
-            except (socket.error, socket.timeout):
-                e = sys.exc_info()[1]
-                raise ConnectionError("Error while reading from socket: %s" %
-                                      (e.args,))
-            if not buffer:
-                raise ConnectionError("Socket closed on remote end")
-            self._reader.feed(buffer)
-            # proactively, but not conclusively, check if more data is in the
-            # buffer. if the data received doesn't end with \n, there's more.
-            if not buffer.endswith(SYM_LF):
-                continue
-            response = self._reader.gets()
-        return response
-
-if hiredis_available:
-    DefaultParser = HiredisParser
-else:
-    DefaultParser = PythonParser
 
 
 class Connection(object):
@@ -250,18 +155,6 @@ class Connection(object):
     def on_connect(self):
         "Initialize the connection, authenticate and select a database"
         self._parser.on_connect(self)
-
-        # if a password is specified, authenticate
-        if self.password:
-            self.send_command('AUTH', self.password)
-            if nativestr(self.read_response()) != 'OK':
-                raise AuthenticationError('Invalid Password')
-
-        # if a database is specified, switch to it
-        if self.db:
-            self.send_command('SELECT', self.db)
-            if nativestr(self.read_response()) != 'OK':
-                raise ConnectionError('Invalid Database')
 
     def disconnect(self):
         "Disconnects from the Redis server"
