@@ -24,7 +24,7 @@ True
 'ClamAV'
 >>> cd.reload()
 'RELOADING'
->>> open('/tmp/EICAR','w').write(clamd.EICAR)
+>>> open('/tmp/EICAR','w+b').write(clamd.EICAR)
 >>> cd.scan('/tmp/EICAR')
 {'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
 >>> cd.instream(BytesIO(clamd.EICAR))
@@ -65,13 +65,13 @@ class _ClamdGeneric(object):
     """
 
     def ping(self):
-        return self._basic_command(b"PING")
+        return self._basic_command("PING")
 
     def version(self):
-        return self._basic_command(b"VERSION")
+        return self._basic_command("VERSION")
 
     def reload(self):
-        return self._basic_command(b"RELOAD")
+        return self._basic_command("RELOAD")
 
     def shutdown(self):
         """
@@ -84,20 +84,20 @@ class _ClamdGeneric(object):
         """
         try:
             self._init_socket()
-            self._send_command(b'SHUTDOWN')
+            self._send_command('SHUTDOWN')
             # result = self._recv_response()
             self._close_socket()
         except socket.error:
             raise ConnectionError('Could probably not shutdown clamd')
 
     def scan(self, file):
-        return self._file_system_scan(b'SCAN', file)
+        return self._file_system_scan('SCAN', file)
 
     def contscan(self, file):
-        return self._file_system_scan(b'CONTSCAN', file)
+        return self._file_system_scan('CONTSCAN', file)
 
     def multiscan(self, file):
-        return self._file_system_scan(b'MULTISCAN', file)
+        return self._file_system_scan('MULTISCAN', file)
 
     def _basic_command(self, command):
         """
@@ -130,10 +130,7 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command(b'{command} {arg}'.format(
-                command=command,
-                arg=file
-            ))
+            self._send_command(command, file)
 
             dr = {}
             for result in self._recv_response_multiline().split('\n'):
@@ -166,14 +163,14 @@ class _ClamdGeneric(object):
 
         try:
             self._init_socket()
-            self._send_command(b'INSTREAM')
+            self._send_command('INSTREAM')
 
             max_chunk_size = 1024  # MUST be < StreamMaxLength in /etc/clamav/clamd.conf
 
             chunk = buff.read(max_chunk_size)
             while chunk:
                 size = struct.pack(b'!L', len(chunk))
-                self.clamd_socket.send('{0}{1}'.format(size, chunk))
+                self.clamd_socket.send(size + chunk)
                 chunk = buff.read(max_chunk_size)
 
             self.clamd_socket.send(struct.pack(b'!L', 0))
@@ -203,20 +200,23 @@ class _ClamdGeneric(object):
         """
         self._init_socket()
         try:
-            self._send_command(b'STATS')
+            self._send_command('STATS')
             return self._recv_response_multiline()
         except socket.error:
             raise ConnectionError('Could not get version information from server')
         finally:
             self._close_socket()
 
-    def _send_command(self, cmd):
+    def _send_command(self, cmd, *args):
         """
         `man clamd` recommends to prefix commands with z, but we will use \n
         terminated strings, as python<->clamd has some problems with \0x00
         """
+        concat_args = ''
+        if args:
+            concat_args = ' ' + ' '.join(args)
 
-        cmd = b'n{0}\n'.format(cmd)
+        cmd = 'n{cmd}{args}\n'.format(cmd=cmd, args=concat_args).encode('utf-8')
         self.clamd_socket.send(cmd)
         return
 
@@ -225,14 +225,14 @@ class _ClamdGeneric(object):
         receive line from clamd
         """
         with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
-            return f.readline().strip()
+            return f.readline().decode('utf-8').strip()
 
     def _recv_response_multiline(self):
         """
         receive multiple line response from clamd and strip all whitespace characters
         """
         with contextlib.closing(self.clamd_socket.makefile('r+w')) as f:
-            return f.read()
+            return f.read().decode('utf-8')
 
     def _close_socket(self):
         """

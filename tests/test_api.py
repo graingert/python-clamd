@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import clamd
 from six import BytesIO
 from contextlib import contextmanager
@@ -37,6 +39,15 @@ class TestUnixSocket():
 
     def test_scan(self):
         with tempfile.NamedTemporaryFile(prefix="python-clamd") as f:
+            f.write(clamd.EICAR)
+            f.flush()
+            os.fchmod(f.fileno(), (mine | other))
+            eq_(self.cd.scan(f.name),
+                {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            )
+
+    def test_unicode_scan(self):
+        with tempfile.NamedTemporaryFile(prefix=u"python-clamdλ") as f:
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
