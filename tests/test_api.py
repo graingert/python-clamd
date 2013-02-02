@@ -24,9 +24,12 @@ def mkdtemp(*args, **kwargs):
         shutil.rmtree(temp_dir)
 
 
-class TestUnixSocket():
+class TestUnixSocket(object):
+    def __init__(self):
+        self.kwargs = {}
+
     def setup(self):
-        self.cd = clamd.ClamdUnixSocket()
+        self.cd = clamd.ClamdUnixSocket(**self.kwargs)
 
     def test_ping(self):
         assert_true(self.cd.ping())
@@ -72,3 +75,8 @@ class TestUnixSocket():
             self.cd.instream(BytesIO(clamd.EICAR)),
             {'stream': ('FOUND', 'Eicar-Test-Signature')}
         )
+
+
+class TestUnixSocketTimeout(TestUnixSocket):
+    def __init__(self):
+        self.kwargs = {"timeout": 10}
