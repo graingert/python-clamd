@@ -80,3 +80,8 @@ class TestUnixSocket(object):
 class TestUnixSocketTimeout(TestUnixSocket):
     def __init__(self):
         self.kwargs = {"timeout": 10}
+
+
+# class TestNetworkSocket(TestUnixSocket):
+#     def setup(self):
+#         self.cd = clamd.ClamdNetworkSocket()

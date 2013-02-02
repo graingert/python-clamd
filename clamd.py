@@ -41,6 +41,7 @@ except:
 
 
 import socket
+import sys
 import struct
 import contextlib
 import re
@@ -51,18 +52,68 @@ EICAR = base64.b64decode(b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E'
                 b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n')
 
 
-class BufferTooLongError(ValueError):
+class ClamdError(Exception):
+    pass
+
+
+class ResponseError(ClamdError):
+    pass
+
+
+class BufferTooLongError(ClamdError):
     """Class for errors with clamd using INSTREAM with a buffer lenght > StreamMaxLength in /etc/clamav/clamd.conf"""
 
 
-class ConnectionError(socket.error):
+class ConnectionError(ClamdError):
     """Class for errors communication with clamd"""
 
 
-class _ClamdGeneric(object):
+class ClamdNetworkSocket(object):
     """
-    Abstract class for clamd
+    Class for using clamd with a network socket
     """
+    def __init__(self, host='127.0.0.1', port=3310, timeout=None):
+        """
+        class initialisation
+
+        host (string) : hostname or ip address
+        port (int) : TCP port
+        timeout (float or None) : socket timeout
+        """
+
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+
+    def _init_socket(self):
+        """
+        internal use only
+        """
+        try:
+            self.clamd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.clamd_socket.connect((self.host, self.port))
+            self.clamd_socket.settimeout(self.timeout)
+
+        except socket.error:
+            e = sys.exc_info()[1]
+            raise ConnectionError(self._error_message(e))
+
+    def _error_message(self, exception):
+        # args for socket.error can either be (errno, "message")
+        # or just "message"
+        if len(exception.args) == 1:
+            return "Error connecting to {host}:{port}. {msg}.".format(
+                host=self.host,
+                port=self.port,
+                msg=exception.args[0]
+            )
+        else:
+            return "Error {erno} connecting {host}:{port}. {msg}.".format(
+                    erno=exception.args[0],
+                    host=self.host,
+                    port=self.port,
+                    msg=exception.args[1]
+                )
 
     def ping(self):
         return self._basic_command("PING")
@@ -86,9 +137,8 @@ class _ClamdGeneric(object):
             self._init_socket()
             self._send_command('SHUTDOWN')
             # result = self._recv_response()
+        finally:
             self._close_socket()
-        except socket.error:
-            raise ConnectionError('Could probably not shutdown clamd')
 
     def scan(self, file):
         return self._file_system_scan('SCAN', file)
@@ -107,8 +157,6 @@ class _ClamdGeneric(object):
         try:
             self._send_command(command)
             return self._recv_response()
-        except socket.error:
-            raise ConnectionError('Could not complete command {command}'.format(command=command))
         finally:
             self._close_socket()
 
@@ -139,8 +187,6 @@ class _ClamdGeneric(object):
 
             return dr
 
-        except socket.error:
-            raise ConnectionError('Unable to scan {file}'.format(file=file))
         finally:
             self._close_socket()
 
@@ -180,9 +226,6 @@ class _ClamdGeneric(object):
 
                 filename, reason, status = self._parse_response(result)
                 return {filename: (status, reason)}
-
-        except socket.error:
-            raise ConnectionError('Unable to scan stream')
         finally:
             self._close_socket()
 
@@ -199,8 +242,6 @@ class _ClamdGeneric(object):
         try:
             self._send_command('STATS')
             return self._recv_response_multiline()
-        except socket.error:
-            raise ConnectionError('Could not get version information from server')
         finally:
             self._close_socket()
 
@@ -215,21 +256,28 @@ class _ClamdGeneric(object):
 
         cmd = 'n{cmd}{args}\n'.format(cmd=cmd, args=concat_args).encode('utf-8')
         self.clamd_socket.send(cmd)
-        return
 
     def _recv_response(self):
         """
         receive line from clamd
         """
-        with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
-            return f.readline().decode('utf-8').strip()
+        try:
+            with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
+                return f.readline().decode('utf-8').strip()
+        except (socket.error, socket.timeout):
+            e = sys.exc_info()[1]
+            raise ConnectionError("Error while reading from socket: {0}".format(e.args))
 
     def _recv_response_multiline(self):
         """
         receive multiple line response from clamd and strip all whitespace characters
         """
-        with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
-            return f.read().decode('utf-8')
+        try:
+            with contextlib.closing(self.clamd_socket.makefile('rb')) as f:
+                return f.read().decode('utf-8')
+        except (socket.error, socket.timeout):
+            e = sys.exc_info()[1]
+            raise ConnectionError("Error while reading from socket: {0}".format(e.args))
 
     def _close_socket(self):
         """
@@ -245,7 +293,7 @@ class _ClamdGeneric(object):
         return scan_response.match(msg).group("path", "virus", "status")
 
 
-class ClamdUnixSocket(_ClamdGeneric):
+class ClamdUnixSocket(ClamdNetworkSocket):
     """
     Class for using clamd with an unix socket
     """
@@ -269,38 +317,20 @@ class ClamdUnixSocket(_ClamdGeneric):
             self.clamd_socket.connect(self.unix_socket)
             self.clamd_socket.settimeout(self.timeout)
         except socket.error:
-            raise ConnectionError('Could not reach clamd using unix socket {0}'.format(self.unix_socket))
+            e = sys.exc_info()[1]
+            raise ConnectionError(self._error_message(e))
 
-
-class ClamdNetworkSocket(_ClamdGeneric):
-    """
-    Class for using clamd with a network socket
-    """
-    def __init__(self, host='127.0.0.1', port=3310, timeout=None):
-        """
-        class initialisation
-
-        host (string) : hostname or ip address
-        port (int) : TCP port
-        timeout (float or None) : socket timeout
-        """
-
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-
-    def _init_socket(self):
-        """
-        internal use only
-        """
-        try:
-            self.clamd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.clamd_socket.connect((self.host, self.port))
-            self.clamd_socket.settimeout(self.timeout)
-
-        except socket.error:
-            raise ConnectionError('Could not reach clamd using network ({host}, {port})'.format(
-                    host=self.host,
-                    port=self.port
-                )
+    def _error_message(self, exception):
+        # args for socket.error can either be (errno, "message")
+        # or just "message"
+        if len(exception.args) == 1:
+            return "Error connecting to {path}. {msg}.".format(
+                path=self.unix_socket,
+                msg=exception.args[0]
             )
+        else:
+            return "Error {erno} connecting {host}:{port}. {msg}.".format(
+                    erno=exception.args[0],
+                    path=self.unix_socket,
+                    msg=exception.args[1]
+                )
