@@ -7,7 +7,7 @@ python:
 install:
   - sudo apt-get update -qq
   - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs -qq
-  - sudo freshclam --quiet
+  - sudo freshclam
   - sudo service clamav-daemon start
   - pip install . --use-mirrors
 script:  python setup.py nosetests
