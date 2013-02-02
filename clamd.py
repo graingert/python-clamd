@@ -60,7 +60,7 @@ class ResponseError(ClamdError):
     pass
 
 
-class BufferTooLongError(ClamdError):
+class BufferTooLongError(ResponseError):
     """Class for errors with clamd using INSTREAM with a buffer lenght > StreamMaxLength in /etc/clamav/clamd.conf"""
 
 
@@ -156,7 +156,11 @@ class ClamdNetworkSocket(object):
         self._init_socket()
         try:
             self._send_command(command)
-            return self._recv_response()
+            response = self._recv_response().rsplit("ERROR", 1)
+            if len(response) > 1:
+                raise ResponseError(response[0])
+            else:
+                return response[0]
         finally:
             self._close_socket()
 
@@ -290,7 +294,10 @@ class ClamdNetworkSocket(object):
         """
         parses responses for SCAN, CONTSCAN, MULTISCAN and STREAM commands.
         """
-        return scan_response.match(msg).group("path", "virus", "status")
+        try:
+            return scan_response.match(msg).group("path", "virus", "status")
+        except AttributeError:
+            raise ResponseError(msg.rsplit("ERROR", 1)[0])
 
 
 class ClamdUnixSocket(ClamdNetworkSocket):
