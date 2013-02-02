@@ -120,9 +120,8 @@ class _ClamdGeneric(object):
 
         file (string): filename or directory (MUST BE ABSOLUTE PATH !)
 
-        return either :
+        return:
           - (dict): {filename1: ('FOUND', 'virusname'), filename2: ('ERROR', 'reason')}
-          - None: if no virus found
 
         May raise:
           - ConnectionError: in case of communication problem
@@ -138,8 +137,6 @@ class _ClamdGeneric(object):
                     filename, reason, status = self._parse_response(result)
                     dr[filename] = (status, reason)
 
-            if not dr:
-                return None
             return dr
 
         except socket.error:
