@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import unicode_literals
 import clamd
 from six import BytesIO
 from contextlib import contextmanager
@@ -74,6 +75,12 @@ class TestUnixSocket(object):
         eq_(
             self.cd.instream(BytesIO(clamd.EICAR)),
             {'stream': ('FOUND', 'Eicar-Test-Signature')}
+        )
+
+    def test_insteam_success(self):
+        eq_(
+            self.cd.instream(BytesIO(b"foo")),
+            {'stream': ('OK', None)}
         )
 
 
