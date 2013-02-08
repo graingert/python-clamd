@@ -1,36 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
-"""
-clamd.py
-
-Author : Alexandre Norman - norman()xael.org
-Contributors :
-  Philippe Lagadec - philippe.lagadec()laposte.net
-  Thomas Kastner - tk()underground8.com
-Licence : LGPL
-
-Usage :
-
-Test strings :
-^^^^^^^^^^^^
-
->>> import clamd
->>> from six import BytesIO
->>> cd = clamd.ClamdUnixSocket()
->>> cd.ping()
-True
->>> cd.version().split()[0]
-'ClamAV'
->>> cd.reload()
-'RELOADING'
->>> open('/tmp/EICAR','wb').write(clamd.EICAR)
->>> cd.scan('/tmp/EICAR')
-{'/tmp/EICAR': ('FOUND', 'Eicar-Test-Signature')}
->>> cd.instream(BytesIO(clamd.EICAR))
-{'stream': ('FOUND', 'Eicar-Test-Signature')}
-
-"""
 
 try:
     __version__ = __import__('pkg_resources').get_distribution('clamd').version

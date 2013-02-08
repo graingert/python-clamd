@@ -13,6 +13,33 @@ the `clamd` daemon.
 
 This is a fork of pyClamd v0.2.0 created by Philippe Lagadec and published on his website: http://www.decalage.info/en/python/pyclamd which in turn is a slightly improved version of pyClamd v0.1.1 created by Alexandre Norman and published on his website: http://xael.org/norman/python/pyclamd/
 
+Usage
+-----
+
+To use with a unix socket::
+
+    >>> import clamd
+    >>> cd = clamd.ClamdUnixSocket()
+    >>> cd.ping()
+    u'PONG'
+    >>> cd.version()                             # doctest: +ELLIPSIS
+    u'ClamAV ...
+    >>> cd.reload()
+    u'RELOADING'
+
+To scan a file::
+
+    >>> open('/tmp/EICAR','wb').write(clamd.EICAR)
+    >>> cd.scan('/tmp/EICAR')
+    {u'/tmp/EICAR': (u'FOUND', u'Eicar-Test-Signature')}
+
+To scan a stream::
+
+    >>> from six import BytesIO
+    >>> cd.instream(BytesIO(clamd.EICAR))
+    {u'stream': (u'FOUND', u'Eicar-Test-Signature')}
+
+
 License
 -------
 `clamd` is released as open-source software under the LGPL license.
