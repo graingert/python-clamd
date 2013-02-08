@@ -9,7 +9,7 @@ import shutil
 import os
 import stat
 
-from nose.tools import ok_, eq_, assert_true
+from nose.tools import ok_, eq_, assert_true, raises
 
 mine = (stat.S_IREAD | stat.S_IWRITE)
 other = stat.S_IROTH
@@ -87,6 +87,13 @@ class TestUnixSocket(object):
 class TestUnixSocketTimeout(TestUnixSocket):
     def __init__(self):
         self.kwargs = {"timeout": 10}
+
+
+@raises(clamd.ConnectionError)
+def test_cannot_connect():
+    clamd.ClamdUnixSocket(filename="/tmp/404").ping()
+
+
 
 
 # class TestNetworkSocket(TestUnixSocket):

@@ -306,7 +306,7 @@ class ClamdUnixSocket(ClamdNetworkSocket):
                 msg=exception.args[0]
             )
         else:
-            return "Error {erno} connecting {host}:{port}. {msg}.".format(
+            return "Error {erno} connecting {path}. {msg}.".format(
                     erno=exception.args[0],
                     path=self.unix_socket,
                     msg=exception.args[1]
