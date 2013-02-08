@@ -91,9 +91,7 @@ class TestUnixSocketTimeout(TestUnixSocket):
 
 @raises(clamd.ConnectionError)
 def test_cannot_connect():
-    clamd.ClamdUnixSocket(filename="/tmp/404").ping()
-
-
+    clamd.ClamdUnixSocket(path="/tmp/404").ping()
 
 
 # class TestNetworkSocket(TestUnixSocket):

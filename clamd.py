@@ -274,15 +274,15 @@ class ClamdUnixSocket(ClamdNetworkSocket):
     """
     Class for using clamd with an unix socket
     """
-    def __init__(self, filename="/var/run/clamav/clamd.ctl", timeout=None):
+    def __init__(self, path="/var/run/clamav/clamd.ctl", timeout=None):
         """
         class initialisation
 
-        filename (string) : unix socket filename
+        path (string) : unix socket path
         timeout (float or None) : socket timeout
         """
 
-        self.unix_socket = filename
+        self.unix_socket = path
         self.timeout = timeout
 
     def _init_socket(self):
