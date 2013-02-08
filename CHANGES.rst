@@ -1,7 +1,7 @@
 Changes
 =========
 
-1.0.0 (unreleased)
+1.0.0 (2013-02-08)
 ------------------
 
 - Change public interface, including exceptions
