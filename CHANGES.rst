@@ -4,7 +4,8 @@ Changes
 1.0.0 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Change public interface, including exceptions
+- Support Python 3.3, withdraw 2.5 support
 
 
 0.3.4 (2013-02-01)
