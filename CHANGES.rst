@@ -4,7 +4,7 @@ Changes
 1.0.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Updated d2to1 dependency
 
 
 1.0.0 (2013-02-08)

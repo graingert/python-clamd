@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(
-    setup_requires=['d2to1'],
+    setup_requires=['d2to1>=0.2.9'],
     tests_require=['six'],
     d2to1=True,
 
