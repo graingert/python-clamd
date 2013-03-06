@@ -1,7 +1,7 @@
 Changes
 =========
 
-1.0.1 (unreleased)
+1.0.1 (2013-03-06)
 ------------------
 
 - Updated d2to1 dependency
