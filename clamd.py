@@ -79,11 +79,11 @@ class ClamdNetworkSocket(object):
             )
         else:
             return "Error {erno} connecting {host}:{port}. {msg}.".format(
-                    erno=exception.args[0],
-                    host=self.host,
-                    port=self.port,
-                    msg=exception.args[1]
-                )
+                erno=exception.args[0],
+                host=self.host,
+                port=self.port,
+                msg=exception.args[1]
+            )
 
     def ping(self):
         return self._basic_command("PING")
@@ -307,7 +307,7 @@ class ClamdUnixSocket(ClamdNetworkSocket):
             )
         else:
             return "Error {erno} connecting {path}. {msg}.".format(
-                    erno=exception.args[0],
-                    path=self.unix_socket,
-                    msg=exception.args[1]
-                )
+                erno=exception.args[0],
+                path=self.unix_socket,
+                msg=exception.args[1]
+            )
