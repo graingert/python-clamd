@@ -1,0 +1,6 @@
+include CHANGES.rst
+include README.rst
+include ez_setup.py
+
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]

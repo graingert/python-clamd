@@ -86,7 +86,7 @@ class TestUnixSocket(object):
 
 class TestUnixSocketTimeout(TestUnixSocket):
     def __init__(self):
-        self.kwargs = {"timeout": 10}
+        self.kwargs = {"timeout": 20}
 
 
 @raises(clamd.ConnectionError)
