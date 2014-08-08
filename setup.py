@@ -18,7 +18,8 @@ setup(
     description = "Clamd is a python interface to Clamd (Clamav daemon).",
     long_description=readme + '\n\n' + history,
     url="https://github.com/graingert/python-clamd",
-    packages=find_packages(exclude="test"),
+    package_dir={'': 'src'},
+    packages=find_packages('src', exclude="tests"),
     classifiers = (
         "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
     ),
@@ -28,4 +29,5 @@ setup(
     ),
     test_suite='nose.collector',
     zip_safe=True,
+    include_package_data=False,
 )
