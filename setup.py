@@ -2,7 +2,7 @@
 from setuptools import setup
 
 setup(
-    setup_requires=['d2to1>=0.2.9'],
+    setup_requires=['d2to1>=0.2.11'],
     d2to1=True,
 
     # This ensures that the MANIFEST.in is read, but it
