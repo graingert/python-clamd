@@ -1,10 +1,12 @@
 Changes
 =========
 
-1.0.2 (unreleased)
+1.0.2 (2014-08-21)
 ------------------
 
-- Nothing changed yet.
+- Remove all dependencies. clamd is now standalone!
+- Use plain setuptools no d2to1.
+- Create universal wheel.
 
 
 1.0.1 (2013-03-06)

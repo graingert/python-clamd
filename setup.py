@@ -9,7 +9,7 @@ history = open('CHANGES.rst').read().replace('.. :changelog:', '')
 
 setup(
     name="clamd",
-    version='1.0.2.dev0',
+    version='1.0.2',
     author="Thomas Grainger",
     author_email="python-clamd@graingert.co.uk",
     maintainer="Thomas Grainger",
