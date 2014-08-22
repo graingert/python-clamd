@@ -3,7 +3,9 @@ python:
   - "2.5"
   - "2.6"
   - "2.7"
+  - "pypy"
   - "3.3"
+  - "3.4"
 install:
   - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
   - sudo freshclam --verbose
