@@ -25,7 +25,6 @@ setup(
     ],
     tests_require = (
         "nose==1.3.3",
-        "six==1.7.3",
     ),
     test_suite='nose.collector',
     zip_safe=True,

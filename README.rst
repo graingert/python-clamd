@@ -35,7 +35,7 @@ To scan a file::
 
 To scan a stream::
 
-    >>> from six import BytesIO
+    >>> from io import BytesIO
     >>> cd.instream(BytesIO(clamd.EICAR))
     {'stream': ('FOUND', 'Eicar-Test-Signature')}
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import clamd
-from six import BytesIO
+from io import BytesIO
 from contextlib import contextmanager
 import tempfile
 import shutil
