@@ -1,17 +1,15 @@
 language: python
-python:
-  - "2.5"
-  - "2.6"
-  - "2.7"
-  - "pypy"
-  - "3.3"
-  - "3.4"
+python: 3.5
+env:
+  - TOX_ENV=py26
+  - TOX_ENV=py27
+  - TOX_ENV=pypy
+  - TOX_ENV=py34
+  - TOX_ENV=py35
+  - TOX_ENV=lint
 install:
   - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
   - sudo freshclam --verbose
   - sudo service clamav-daemon start
-  - pip install .
-script:  python setup.py nosetests
-matrix:
-  allow_failures:
-    - python: "2.5"
+  - pip install tox
+script: tox -e $TOX_ENV

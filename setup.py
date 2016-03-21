@@ -23,11 +23,6 @@ setup(
     classifiers = [
         "License :: OSI Approved :: GNU Library or Lesser General Public License (LGPL)",
     ],
-    tests_require = (
-        "nose==1.3.3",
-        "six==1.7.3",
-    ),
-    test_suite='nose.collector',
     zip_safe=True,
     include_package_data=False,
 )
