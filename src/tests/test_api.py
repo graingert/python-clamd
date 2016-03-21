@@ -2,14 +2,14 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import clamd
-from six import BytesIO
+from io import BytesIO
 from contextlib import contextmanager
 import tempfile
 import shutil
 import os
 import stat
 
-from nose.tools import ok_, eq_, assert_true, raises
+import pytest
 
 mine = (stat.S_IREAD | stat.S_IWRITE)
 other = stat.S_IROTH
@@ -26,38 +26,37 @@ def mkdtemp(*args, **kwargs):
 
 
 class TestUnixSocket(object):
-    def __init__(self):
-        self.kwargs = {}
+    kwargs = {}
 
     def setup(self):
         self.cd = clamd.ClamdUnixSocket(**self.kwargs)
 
     def test_ping(self):
-        assert_true(self.cd.ping())
+        assert self.cd.ping()
 
     def test_version(self):
-        ok_(self.cd.version().startswith("ClamAV"))
+        assert self.cd.version().startswith("ClamAV")
 
     def test_reload(self):
-        eq_(self.cd.reload(), 'RELOADING')
+        assert self.cd.reload() == 'RELOADING'
 
     def test_scan(self):
         with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            eq_(self.cd.scan(f.name),
-                {f.name: ('FOUND', 'Eicar-Test-Signature')}
-            )
+            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+
+            assert self.cd.scan(f.name) == expected
 
     def test_unicode_scan(self):
         with tempfile.NamedTemporaryFile('wb', prefix=u"python-clamdλ") as f:
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            eq_(self.cd.scan(f.name),
-                {f.name: ('FOUND', 'Eicar-Test-Signature')}
-            )
+            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+
+            assert self.cd.scan(f.name) == expected
 
     def test_multiscan(self):
         expected = {}
@@ -69,31 +68,20 @@ class TestUnixSocket(object):
                     expected[f.name] = ('FOUND', 'Eicar-Test-Signature')
             os.chmod(d, (mine | other | execute))
 
-            eq_(self.cd.multiscan(d), expected)
+            assert self.cd.multiscan(d) == expected
 
     def test_instream(self):
-        eq_(
-            self.cd.instream(BytesIO(clamd.EICAR)),
-            {'stream': ('FOUND', 'Eicar-Test-Signature')}
-        )
+        expected = {'stream': ('FOUND', 'Eicar-Test-Signature')}
+        assert self.cd.instream(BytesIO(clamd.EICAR)) == expected
 
     def test_insteam_success(self):
-        eq_(
-            self.cd.instream(BytesIO(b"foo")),
-            {'stream': ('OK', None)}
-        )
+        assert self.cd.instream(BytesIO(b"foo")) == {'stream': ('OK', None)}
 
 
 class TestUnixSocketTimeout(TestUnixSocket):
-    def __init__(self):
-        self.kwargs = {"timeout": 20}
+    kwargs = {"timeout": 20}
 
 
-@raises(clamd.ConnectionError)
 def test_cannot_connect():
-    clamd.ClamdUnixSocket(path="/tmp/404").ping()
-
-
-# class TestNetworkSocket(TestUnixSocket):
-#     def setup(self):
-#         self.cd = clamd.ClamdNetworkSocket()
+    with pytest.raises(clamd.ConnectionError):
+        clamd.ClamdUnixSocket(path="/tmp/404").ping()

@@ -18,8 +18,10 @@ import re
 import base64
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
-EICAR = base64.b64decode(b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E' \
-                b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n')
+EICAR = base64.b64decode(
+    b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E'
+    b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n'
+)
 
 
 class ClamdError(Exception):
