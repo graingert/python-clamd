@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from ez_setup import use_setuptools
-use_setuptools("0.7.0")
+use_setuptools()
 
 from setuptools import setup, find_packages
 
