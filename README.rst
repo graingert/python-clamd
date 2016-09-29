@@ -13,6 +13,12 @@ the `clamd` daemon.
 
 This is a fork of pyClamd v0.2.0 created by Philippe Lagadec and published on his website: http://www.decalage.info/en/python/pyclamd which in turn is a slightly improved version of pyClamd v0.1.1 created by Alexandre Norman and published on his website: http://xael.org/norman/python/pyclamd/
 
+Installation
+------------
+
+    $ pip install clamd
+
+
 Usage
 -----
 
