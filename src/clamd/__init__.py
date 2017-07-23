@@ -16,6 +16,11 @@ import struct
 import contextlib
 import re
 import base64
+# _multiprocessing.sendfd() only exists in python2
+if sys.version_info[0] < 3:
+    import _multiprocessing
+else:
+    import array
 
 scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
 EICAR = base64.b64decode(
@@ -264,7 +269,7 @@ class ClamdNetworkSocket(object):
 
     def _parse_response(self, msg):
         """
-        parses responses for SCAN, CONTSCAN, MULTISCAN and STREAM commands.
+        parses responses for SCAN, CONTSCAN, MULTISCAN, FILDES and STREAM commands.
         """
         try:
             return scan_response.match(msg).group("path", "virus", "status")
@@ -286,6 +291,25 @@ class ClamdUnixSocket(ClamdNetworkSocket):
 
         self.unix_socket = path
         self.timeout = timeout
+
+    # only works for python >= 3.3
+    def _send_fd_via_socket_sendmsg(self, fd):
+        """
+        internal use only
+        """
+        return self.clamd_socket.sendmsg([b'\0'], [(socket.SOL_SOCKET, socket.SCM_RIGHTS, array.array("i", [fd]))])
+
+    # _multiprocessing.sendfd() only exists in python2
+    def _send_fd_via_mp_sendfd(self, fd):
+        """
+        internal use only
+        """
+        return _multiprocessing.sendfd(self.clamd_socket.fileno(), fd)
+
+    # make _send_fd refer to one of the two _send_fd_* methods above. Either
+    # _send_fd_via_socket_sendmsg or _send_fd_via_mp_sendfd, depending upon the version of python
+    """internal use only"""
+    _send_fd = _send_fd_via_socket_sendmsg if sys.version_info[0] >= 3 else _send_fd_via_mp_sendfd
 
     def _init_socket(self):
         """
@@ -313,3 +337,19 @@ class ClamdUnixSocket(ClamdNetworkSocket):
                 path=self.unix_socket,
                 msg=exception.args[1]
             )
+
+    def fdscan(self, path, fd):
+        """
+        Scan a file referenced by a file descriptor.
+        path (string) : path of file to use for result dictionary (otherwise unused)
+        fd (int) : file descriptor number (fileno) of file to scan
+        """
+        try:
+            self._init_socket()
+            cmd = 'nFILDES\n'.encode('utf-8')
+            self.clamd_socket.send(cmd)
+            self._send_fd(fd)
+            _, reason, status = self._parse_response(self._recv_response_multiline())
+            return {path: (status, reason)}
+        finally:
+            self._close_socket()
