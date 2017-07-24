@@ -8,6 +8,12 @@ import tempfile
 import shutil
 import os
 import stat
+import sys
+try:
+    import _multiprocessing
+    have_multiprocessing_sendfd = hasattr(_multiprocessing, 'sendfd') and callable(_multiprocessing.sendfd)
+except ImportError:
+    have_multiprocessing_sendfd = False
 
 import pytest
 
@@ -76,6 +82,24 @@ class TestUnixSocket(object):
 
     def test_insteam_success(self):
         assert self.cd.instream(BytesIO(b"foo")) == {'stream': ('OK', None)}
+
+    @pytest.mark.skipif(sys.version_info[0] < 3 and not have_multiprocessing_sendfd,
+                        reason="For Python 2.x, _multiprocessing.sendfd() is required for this test")
+    def test_fdscan(self):
+        with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
+            f.write(clamd.EICAR)
+            f.flush()
+            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            assert self.cd.fdscan(f.name, f.fileno()) == expected
+
+    @pytest.mark.skipif(sys.version_info[0] < 3 and not have_multiprocessing_sendfd,
+                        reason="For Python 2.x, _multiprocessing.sendfd() is required for this test")
+    def test_fdscan_success(self):
+        with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
+            f.write(b"foo")
+            f.flush()
+            expected = {f.name: ('OK', None)}
+            assert self.cd.fdscan(f.name, f.fileno()) == expected
 
 
 class TestUnixSocketTimeout(TestUnixSocket):
