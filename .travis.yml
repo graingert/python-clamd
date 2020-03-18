@@ -1,11 +1,10 @@
 language: python
-python: 3.5
+python: 3.8
 env:
-  - TOX_ENV=py26
-  - TOX_ENV=py27
   - TOX_ENV=pypy
-  - TOX_ENV=py34
-  - TOX_ENV=py35
+  - TOX_ENV=py36
+  - TOX_ENV=py37
+  - TOX_ENV=py38
   - TOX_ENV=lint
 install:
   - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs

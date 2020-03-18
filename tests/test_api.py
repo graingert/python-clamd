@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 import clamd
 from io import BytesIO
 from contextlib import contextmanager
@@ -50,7 +48,7 @@ class TestUnixSocket(object):
             assert self.cd.scan(f.name) == expected
 
     def test_unicode_scan(self):
-        with tempfile.NamedTemporaryFile('wb', prefix=u"python-clamdλ") as f:
+        with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
