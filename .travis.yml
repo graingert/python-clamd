@@ -1,14 +1,24 @@
 language: python
-python: 3.8
-env:
-  - TOX_ENV=pypy
-  - TOX_ENV=py36
-  - TOX_ENV=py37
-  - TOX_ENV=py38
-  - TOX_ENV=lint
-install:
-  - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
+
+
+matrix:
+  include:
+    - python: 3.8
+      env: TOXENV=flake8
+    - python: 3.8
+      env: TOXENV=black
+    - python: 3.8
+      env: TOXENV=py38
+
+    - python: 3.7
+      env: TOXENV=py37
+
+    - python: 3.6
+      env: TOXENV=py36
+
+
+install: - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
   - sudo freshclam --verbose
-  - sudo service clamav-daemon start
+  - sudo systemctl start clamav-daemon
   - pip install tox
-script: tox -e $TOX_ENV
+script: tox

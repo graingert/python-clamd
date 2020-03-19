@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-try:
-    __version__ = __import__("pkg_resources").get_distribution("clamd").version
-except:
-    __version__ = ""
-
-# $Source$
-
-
 import socket
 import sys
 import struct
@@ -101,7 +93,7 @@ class ClamdNetworkSocket(object):
 
         Raises:
             ConnectionError: In case of communication problem
-            
+
         Return:
             None
 
@@ -170,7 +162,7 @@ class ClamdNetworkSocket(object):
 
     def instream(self, buff):
         """Scan a buffer
-        
+
         Args:
             filelikeobj (TextIO): Buffer to scan
 
