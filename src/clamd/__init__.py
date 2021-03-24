@@ -231,7 +231,7 @@ class ClamdNetworkSocket(object):
             concat_args = ' ' + ' '.join(args)
 
         cmd = 'n{cmd}{args}\n'.format(cmd=cmd, args=concat_args).encode('utf-8')
-        self.clamd_socket.send(cmd)
+        self.clamd_socket.sendall(cmd)
 
     def _recv_response(self):
         """
