@@ -166,11 +166,13 @@ class ClamdNetworkSocket(object):
         finally:
             self._close_socket()
 
-    def instream(self, buff):
+    def instream(self, buff, max_chunk_size=1024):
         """
         Scan a buffer
 
         buff  filelikeobj: buffer to scan
+        max_chunk_size int: Maximum size of chunk to send to clamd in bytes
+          MUST be < StreamMaxLength in /etc/clamav/clamd.conf
 
         return:
           - (dict): {filename1: ("virusname", "status")}
@@ -184,15 +186,13 @@ class ClamdNetworkSocket(object):
             self._init_socket()
             self._send_command('INSTREAM')
 
-            max_chunk_size = 1024  # MUST be < StreamMaxLength in /etc/clamav/clamd.conf
-
             chunk = buff.read(max_chunk_size)
             while chunk:
                 size = struct.pack(b'!L', len(chunk))
-                self.clamd_socket.send(size + chunk)
+                self.clamd_socket.sendall(size + chunk)
                 chunk = buff.read(max_chunk_size)
 
-            self.clamd_socket.send(struct.pack(b'!L', 0))
+            self.clamd_socket.sendall(struct.pack(b'!L', 0))
 
             result = self._recv_response()
 
@@ -231,7 +231,7 @@ class ClamdNetworkSocket(object):
             concat_args = ' ' + ' '.join(args)
 
         cmd = 'n{cmd}{args}\n'.format(cmd=cmd, args=concat_args).encode('utf-8')
-        self.clamd_socket.send(cmd)
+        self.clamd_socket.sendall(cmd)
 
     def _recv_response(self):
         """
