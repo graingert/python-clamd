@@ -63,6 +63,9 @@ class ClamdNetworkSocket(object):
         """
         try:
             self.clamd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Set timeout prior to connecting to ensure that an initial
+            # connection timeout will respect the setting regardless of OS.
+            # https://docs.python.org/3/library/socket.html#timeouts-and-the-connect-method
             self.clamd_socket.settimeout(self.timeout)
             self.clamd_socket.connect((self.host, self.port))
 
