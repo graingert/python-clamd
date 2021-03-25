@@ -63,8 +63,8 @@ class ClamdNetworkSocket(object):
         """
         try:
             self.clamd_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.clamd_socket.connect((self.host, self.port))
             self.clamd_socket.settimeout(self.timeout)
+            self.clamd_socket.connect((self.host, self.port))
 
         except socket.error:
             e = sys.exc_info()[1]
