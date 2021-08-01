@@ -7,9 +7,10 @@ env:
   - TOX_ENV=py34
   - TOX_ENV=py35
   - TOX_ENV=lint
-install:
-  - sudo apt-get install clamav-daemon clamav-freshclam clamav-unofficial-sigs
-  - sudo freshclam --verbose
-  - sudo service clamav-daemon start
-  - pip install tox
+install: pip install tox
 script: tox -e $TOX_ENV
+addons:
+  apt:
+    packages:
+    - clamav-deamon
+sudo: false
