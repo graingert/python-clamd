@@ -1,14 +1,11 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-import clamd
-from io import BytesIO
-from contextlib import contextmanager
-import tempfile
-import shutil
 import os
+import shutil
 import stat
+import tempfile
+from contextlib import contextmanager
+from io import BytesIO
 
+import clamd
 import pytest
 
 mine = (stat.S_IREAD | stat.S_IWRITE)
@@ -76,6 +73,15 @@ class TestUnixSocket(object):
 
     def test_insteam_success(self):
         assert self.cd.instream(BytesIO(b"foo")) == {'stream': ('OK', None)}
+
+    def test_fdscan(self):
+        with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
+            f.write(clamd.EICAR)
+            f.flush()
+            os.fchmod(f.fileno(), (mine | other))
+            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+
+            assert self.cd.fdscan(f.name) == expected
 
 
 class TestUnixSocketTimeout(TestUnixSocket):
