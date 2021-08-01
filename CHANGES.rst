@@ -4,7 +4,7 @@ Changes
 1.0.3 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Added fdscan() method to ClamdUnixSocket for scanning file descriptors
 
 
 1.0.2 (2014-08-21)
