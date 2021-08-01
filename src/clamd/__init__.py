@@ -1,26 +1,24 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-
 try:
-    __version__ = __import__('pkg_resources').get_distribution('clamd').version
-except:
-    __version__ = ''
+    import importlib
 
-# $Source$
+    __version__ = importlib.metadata.distribution("clamd").version
+except ImportError:
+    __version__ = ""
 
-
-import socket
-import sys
-import struct
+import base64
 import contextlib
 import re
-import base64
+import socket
+import struct
+import sys
+from multiprocessing.reduction import sendfds
 
-scan_response = re.compile(r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$")
+scan_response = re.compile(
+    r"^(?P<path>.*): ((?P<virus>.+) )?(?P<status>(FOUND|OK|ERROR))$"
+)
 EICAR = base64.b64decode(
-    b'WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E'
-    b'QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n'
+    b"WDVPIVAlQEFQWzRcUFpYNTQoUF4pN0NDKTd9JEVJQ0FSLVNUQU5E"
+    b"QVJELUFOVElWSVJVUy1URVNU\nLUZJTEUhJEgrSCo=\n"
 )
 
 
@@ -313,3 +311,16 @@ class ClamdUnixSocket(ClamdNetworkSocket):
                 path=self.unix_socket,
                 msg=exception.args[1]
             )
+
+    def fdscan(self, file):
+        """Scan a file referenced by a file descriptor."""
+        try:
+            self._init_socket()
+            with open(file, mode="rb") as fp:
+                self._send_command("FILDES")
+                sendfds(self.clamd_socket, [fp.fileno()])
+                result = self._recv_response()
+                _, reason, status = self._parse_response(result)
+                return {file: (status, reason)}
+        finally:
+            self._close_socket()
