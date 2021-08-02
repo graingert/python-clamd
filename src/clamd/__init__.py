@@ -1,7 +1,5 @@
 try:
-    import importlib
-
-    __version__ = importlib.metadata.distribution("clamd").version
+    __version__ = __import__("pkg_resources").get_distribution("clamd").version
 except ImportError:
     __version__ = ""
 
