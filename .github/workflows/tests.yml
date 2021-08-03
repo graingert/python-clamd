@@ -42,5 +42,15 @@ jobs:
           sudo freshclam --verbose
           sudo systemctl restart clamav-daemon.service
 
+      - name: Wait for 25 seconds until clamd socket becomes available
+        run: |
+          secs=25
+          while [[ $secs -gt 0 ]] && ! [[ -f "/var/run/clamav/clamd.ctl" ]];
+          do
+              echo -ne "$secs\033[0K\r"
+              sleep 1
+              : $((secs--))
+          done
+
       - name: Run unit tests
         run: pytest

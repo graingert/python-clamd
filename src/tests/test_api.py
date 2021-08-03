@@ -11,6 +11,7 @@ import pytest
 mine = (stat.S_IREAD | stat.S_IWRITE)
 other = stat.S_IROTH
 execute = (stat.S_IEXEC | stat.S_IXOTH)
+EICAR_SIG_NAME = "Win.Test.EICAR_HDB-1"
 
 
 @contextmanager
@@ -42,7 +43,7 @@ class TestUnixSocket(object):
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
 
             assert self.cd.scan(f.name) == expected
 
@@ -51,7 +52,7 @@ class TestUnixSocket(object):
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
 
             assert self.cd.scan(f.name) == expected
 
@@ -62,13 +63,13 @@ class TestUnixSocket(object):
                 with open(os.path.join(d, "file" + str(i)), 'wb') as f:
                     f.write(clamd.EICAR)
                     os.fchmod(f.fileno(), (mine | other))
-                    expected[f.name] = ('FOUND', 'Eicar-Test-Signature')
+                    expected[f.name] = ('FOUND', EICAR_SIG_NAME)
             os.chmod(d, (mine | other | execute))
 
             assert self.cd.multiscan(d) == expected
 
     def test_instream(self):
-        expected = {'stream': ('FOUND', 'Eicar-Test-Signature')}
+        expected = {'stream': ('FOUND', EICAR_SIG_NAME)}
         assert self.cd.instream(BytesIO(clamd.EICAR)) == expected
 
     def test_insteam_success(self):
@@ -79,7 +80,7 @@ class TestUnixSocket(object):
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
 
             assert self.cd.fdscan(f.name) == expected
 
