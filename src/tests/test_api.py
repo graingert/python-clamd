@@ -1,19 +1,17 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-from __future__ import unicode_literals
-import clamd
-from io import BytesIO
-from contextlib import contextmanager
-import tempfile
-import shutil
 import os
+import shutil
 import stat
+import tempfile
+from contextlib import contextmanager
+from io import BytesIO
 
+import clamd
 import pytest
 
 mine = (stat.S_IREAD | stat.S_IWRITE)
 other = stat.S_IROTH
 execute = (stat.S_IEXEC | stat.S_IXOTH)
+EICAR_SIG_NAME = "Win.Test.EICAR_HDB-1"
 
 
 @contextmanager
@@ -45,7 +43,7 @@ class TestUnixSocket(object):
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
 
             assert self.cd.scan(f.name) == expected
 
@@ -54,7 +52,7 @@ class TestUnixSocket(object):
             f.write(clamd.EICAR)
             f.flush()
             os.fchmod(f.fileno(), (mine | other))
-            expected = {f.name: ('FOUND', 'Eicar-Test-Signature')}
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
 
             assert self.cd.scan(f.name) == expected
 
@@ -65,17 +63,26 @@ class TestUnixSocket(object):
                 with open(os.path.join(d, "file" + str(i)), 'wb') as f:
                     f.write(clamd.EICAR)
                     os.fchmod(f.fileno(), (mine | other))
-                    expected[f.name] = ('FOUND', 'Eicar-Test-Signature')
+                    expected[f.name] = ('FOUND', EICAR_SIG_NAME)
             os.chmod(d, (mine | other | execute))
 
             assert self.cd.multiscan(d) == expected
 
     def test_instream(self):
-        expected = {'stream': ('FOUND', 'Eicar-Test-Signature')}
+        expected = {'stream': ('FOUND', EICAR_SIG_NAME)}
         assert self.cd.instream(BytesIO(clamd.EICAR)) == expected
 
     def test_insteam_success(self):
         assert self.cd.instream(BytesIO(b"foo")) == {'stream': ('OK', None)}
+
+    def test_fdscan(self):
+        with tempfile.NamedTemporaryFile('wb', prefix="python-clamd") as f:
+            f.write(clamd.EICAR)
+            f.flush()
+            os.fchmod(f.fileno(), (mine | other))
+            expected = {f.name: ('FOUND', EICAR_SIG_NAME)}
+
+            assert self.cd.fdscan(f.name) == expected
 
 
 class TestUnixSocketTimeout(TestUnixSocket):
