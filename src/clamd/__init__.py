@@ -3,9 +3,18 @@
 from __future__ import unicode_literals
 
 try:
-    __version__ = __import__('pkg_resources').get_distribution('clamd').version
-except:
-    __version__ = ''
+    import importlib.metadata
+except ImportError:
+    # importlib.metadata was added in python 3.8
+    try:
+        __version__ = __import__('pkg_resources').get_distribution('clamd').version
+    except:
+        __version__ = ''
+else:
+    try:
+        __version__ = importlib.metadata.version("clamd")
+    except importlib.metadata.PackageNotFoundError:
+        __version__ = ''
 
 # $Source$
 
